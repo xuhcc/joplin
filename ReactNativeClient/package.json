@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start",
-    "postinstall": "node ../Tools/copycss.js && node ../Tools/buildReactNativeInjectedJs.js && npx jetify && cd .. && npm i"
+    "postinstall": "node ../Tools/copycss.js && node ../Tools/buildReactNativeInjectedJs.js && npx jetify && cd .. && npm i",
+    "build-release": "cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@react-native-community/slider": "^1.1.3",
