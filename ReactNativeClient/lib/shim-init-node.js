@@ -8,6 +8,7 @@ const mimeUtils = require('lib/mime-utils.js').mime;
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
 const urlValidator = require('valid-url');
+const Setting = require('lib/models/Setting.js');
 const { _ } = require('lib/locale.js');
 
 function shimInit() {
@@ -152,7 +153,7 @@ function shimInit() {
 
 		let targetPath = Resource.fullPath(resource);
 
-		if (resource.mime == 'image/jpeg' || resource.mime == 'image/jpg' || resource.mime == 'image/png') {
+		if ((resource.mime == 'image/jpeg' || resource.mime == 'image/jpg' || resource.mime == 'image/png') && (!Setting.value('image.noresizing'))) {
 			await resizeImage_(filePath, targetPath, resource.mime);
 		} else {
 			// const stat = await shim.fsDriver().stat(filePath);

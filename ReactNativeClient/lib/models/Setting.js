@@ -462,7 +462,7 @@ class Setting extends BaseModel {
 					'landscape': _('Landscape'),
 				};
 			}},
-
+			'image.noresizing': { value: false, type: Setting.TYPE_BOOL, public: true, label: () => _('Do not resize images') },
 
 			'net.customCertificates': {
 				value: '',
