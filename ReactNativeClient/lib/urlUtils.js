@@ -39,4 +39,25 @@ urlUtils.prependBaseUrl = function(url, baseUrl) {
 	}
 };
 
+urlUtils.isResourceUrl = function(url) {
+	return !!url.match(/^(joplin:\/\/|:\/)[0-9a-zA-Z]{32}(|#.*)$/);
+};
+
+urlUtils.parseResourceUrl = function(url) {
+	if (!urlUtils.isResourceUrl(url)) return null;
+
+	const filename = url.split('/').pop();
+	const splitted = filename.split('#');
+
+	const output = {
+		itemId: '',
+		hash: '',
+	};
+
+	if (splitted.length) output.itemId = splitted[0];
+	if (splitted.length >= 2) output.hash = splitted[1];
+
+	return output;
+};
+
 module.exports = urlUtils;

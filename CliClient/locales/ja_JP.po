@@ -15,8 +15,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 2.2.3\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
 
 msgid "To delete a tag, untag the associated notes."
 msgstr "タグを削除するには、関連するノートからタグを外してください。"
@@ -389,6 +387,23 @@ msgstr "指定された<pattern>をすべてのノートから検索する。"
 
 #, javascript-format
 msgid ""
+"Start, stop or check the API server. To specify on which port it should run, "
+"set the api.port config variable. Commands are (%s)."
+msgstr ""
+
+#, javascript-format
+msgid "Server is already running on port %d"
+msgstr ""
+
+#, javascript-format
+msgid "Server is running on port %d"
+msgstr ""
+
+msgid "Server is not running."
+msgstr ""
+
+#, javascript-format
+msgid ""
 "Sets the property <name> of the given <note> to the given [value]. Possible "
 "properties are:\n"
 "\n"
@@ -742,6 +757,10 @@ msgstr "&ヘルプ"
 msgid "Website and documentation"
 msgstr "Webサイトとドキュメント"
 
+#, fuzzy
+msgid "Joplin Forum"
+msgstr "JoplinのWebサイト"
+
 msgid "Make a donation"
 msgstr "寄付する"
 
@@ -941,8 +960,8 @@ msgstr ""
 "ロードしてきたのでしょう。"
 
 msgid ""
-"For more information about End-To-End Encryption (E2EE) and advices on how "
-"to enable it please check the documentation:"
+"For more information about End-To-End Encryption (E2EE) and advice on how to "
+"enable it please check the documentation:"
 msgstr ""
 "エンドツーエンド暗号化(E2EE)に関する詳細な情報とどのように有効化するのかのア"
 "ドバイスは、次のドキュメントをご覧ください:"
@@ -1545,6 +1564,10 @@ msgstr "++追加++構文を有効にする"
 msgid "Enable multimarkdown table extension"
 msgstr "MultiMarkdownのテーブル拡張を有効にする"
 
+#, fuzzy
+msgid "Enable Fountain syntax support"
+msgstr "~下付きテキスト~構文を有効にする"
+
 msgid "Show tray icon"
 msgstr "トレイアイコンの表示"
 
@@ -1629,6 +1652,11 @@ msgstr ""
 
 msgid "Ignore TLS certificate errors"
 msgstr "TLS証明書のエラーを無視"
+
+msgid ""
+"Specify the port that should be used by the API server. If not set, a "
+"default will be used."
+msgstr ""
 
 msgid "Enable note history"
 msgstr "ノートの履歴を有効にする"
@@ -1785,6 +1813,14 @@ msgstr "カメラ使用の許可"
 
 msgid "Your permission to use your camera is required."
 msgstr "カメラを使用するには権限が必要です。"
+
+#, fuzzy
+msgid "You currently have no notebooks."
+msgstr "選択中のノートまたはノートブックを削除"
+
+#, fuzzy
+msgid "Create a notebook"
+msgstr "あたらしいノートブックを作成します。"
 
 msgid "There are currently no notes. Create one by clicking on the (+) button."
 msgstr "ノートがありません。(+)ボタンを押して新しいノートを作成してください。"
@@ -2125,10 +2161,6 @@ msgstr "検索"
 #~ "ファイルシステム同期の有効時に同期を行うパスです。`sync.target`も参考にし"
 #~ "てください。"
 
-#, fuzzy
-#~ msgid "Joplin v%s"
-#~ msgstr "JoplinのWebサイト"
-
 #~ msgid "State: %s."
 #~ msgstr "状態: \"%s\"."
 
@@ -2180,9 +2212,6 @@ msgstr "検索"
 
 #~ msgid "Exit the application."
 #~ msgstr "アプリケーションを終了する"
-
-#~ msgid "Delete the currently selected note or notebook."
-#~ msgstr "選択中のノートまたはノートブックを削除"
 
 #~ msgid "Set a to-do as completed / not completed"
 #~ msgstr "ToDoを完了/未完に設定"
