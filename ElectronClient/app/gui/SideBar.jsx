@@ -267,9 +267,11 @@ class SideBarComponent extends React.Component {
 		if (!itemId || !itemType) throw new Error('No data on element');
 
 		let deleteMessage = '';
+		let buttonLabel = _('Remove');
 		if (itemType === BaseModel.TYPE_FOLDER) {
 			const folder = await Folder.load(itemId);
 			deleteMessage = _('Delete notebook "%s"?\n\nAll notes and sub-notebooks within this notebook will also be deleted.', substrWithEllipsis(folder.title, 0, 32));
+			buttonLabel = _('Delete');
 		} else if (itemType === BaseModel.TYPE_TAG) {
 			const tag = await Tag.load(itemId);
 			deleteMessage = _('Remove tag "%s" from all notes?', substrWithEllipsis(tag.title, 0, 32));
@@ -286,9 +288,12 @@ class SideBarComponent extends React.Component {
 
 		menu.append(
 			new MenuItem({
-				label: _('Delete'),
+				label: buttonLabel,
 				click: async () => {
-					const ok = bridge().showConfirmMessageBox(deleteMessage);
+					const ok = bridge().showConfirmMessageBox(deleteMessage, {
+						buttons: [buttonLabel, _('Cancel')],
+						defaultId: 1,
+					});
 					if (!ok) return;
 
 					if (itemType === BaseModel.TYPE_FOLDER) {
@@ -427,7 +432,7 @@ class SideBarComponent extends React.Component {
 		};
 
 		const iconName = this.props.collapsedFolderIds.indexOf(folder.id) >= 0 ? 'fa-plus-square' : 'fa-minus-square';
-		const expandIcon = <i style={expandIconStyle} className={'fa ' + iconName}></i>;
+		const expandIcon = <i style={expandIconStyle} className={`fa ${iconName}`}></i>;
 		const expandLink = hasChildren ? (
 			<a style={expandLinkStyle} href="#" folderid={folder.id} onClick={this.onFolderToggleClick_}>
 				{expandIcon}
@@ -515,7 +520,7 @@ class SideBarComponent extends React.Component {
 
 	makeHeader(key, label, iconName, extraProps = {}) {
 		const style = this.style().header;
-		const icon = <i style={{ fontSize: style.fontSize, marginRight: 5 }} className={'fa ' + iconName} />;
+		const icon = <i style={{ fontSize: style.fontSize, marginRight: 5 }} className={`fa ${iconName}`} />;
 
 		if (extraProps.toggleblock || extraProps.onClick) {
 			style.cursor = 'pointer';
@@ -603,7 +608,7 @@ class SideBarComponent extends React.Component {
 
 			const focusItem = focusItems[newIndex];
 
-			let actionName = focusItem.type.toUpperCase() + '_SELECT';
+			let actionName = `${focusItem.type.toUpperCase()}_SELECT`;
 
 			this.props.dispatch({
 				type: actionName,
@@ -664,7 +669,7 @@ class SideBarComponent extends React.Component {
 			iconStyle.animation = 'icon-infinite-rotation 1s linear infinite';
 		}
 
-		const icon = <i style={iconStyle} className={'fa ' + iconName} />;
+		const icon = <i style={iconStyle} className={`fa ${iconName}`} />;
 		return (
 			<a
 				className="synchronize-button"

@@ -26,7 +26,7 @@ globalStyle.marginRight = globalStyle.margin;
 globalStyle.marginLeft = globalStyle.margin;
 globalStyle.marginTop = globalStyle.margin;
 globalStyle.marginBottom = globalStyle.margin;
-globalStyle.htmlMarginLeft = ((globalStyle.marginLeft / 10) * 0.6).toFixed(2) + 'em';
+globalStyle.htmlMarginLeft = `${((globalStyle.marginLeft / 10) * 0.6).toFixed(2)}em`;
 
 globalStyle.icon = {
 	fontSize: 30,
@@ -65,7 +65,11 @@ globalStyle.buttonStyle = {
 	maxWidth: 160,
 	paddingLeft: 12,
 	paddingRight: 12,
+	paddingTop: 6,
+	paddingBottom: 6,
 	boxShadow: '0px 1px 1px rgba(0,0,0,0.3)',
+	fontSize: globalStyle.fontSize,
+	borderRadius: 4,
 };
 
 const lightStyle = {
@@ -92,7 +96,7 @@ const lightStyle = {
 
 	warningBackgroundColor: '#FFD08D',
 
-	htmlColor:'#222222',
+	htmlColor: '#222222',
 	htmlBackgroundColor: 'white',
 	htmlDividerColor: 'rgb(230,230,230)',
 	htmlLinkColor: 'rgb(80,130,190)',
@@ -140,6 +144,8 @@ const darkStyle = {
 
 	editorTheme: 'twilight',
 	codeThemeCss: 'atom-one-dark-reasonable.css',
+
+	highlightedColor: '#0066C7',
 };
 
 // Solarized Styles
@@ -214,6 +220,43 @@ const solarizedDarkStyle = {
 	htmlCodeColor: '#fdf6e3',
 
 	editorTheme: 'solarized_dark',
+	codeThemeCss: 'atom-one-dark-reasonable.css',
+};
+
+const draculaStyle = {
+	backgroundColor: '#282a36',
+	backgroundColorTransparent: 'rgba(40, 42, 54, 0.9)',
+	oddBackgroundColor: '#282a36',
+	color: '#f8f8f2', // For regular text
+	colorError: '#ff5555',
+	colorWarn: '#ffb86c',
+	colorFaded: '#6272a4', // For less important text;
+	colorBright: '#50fa7b', // For important text;
+	dividerColor: '#bd93f9',
+	selectedColor: '#44475a',
+	urlColor: '#8be9fd',
+
+	backgroundColor2: '#21222C',
+	depthColor: 'rgb(200, 200, 200, OPACITY)',
+	color2: '#bd93f9',
+	selectedColor2: '#44475a',
+	colorError2: '#ff5555',
+
+	raisedBackgroundColor: '#44475a',
+	raisedColor: '#bd93f9',
+
+	warningBackgroundColor: '#ffb86c',
+
+	htmlColor: '#f8f8f2',
+	htmlBackgroundColor: '#282a36',
+	htmlDividerColor: '#f8f8f2',
+	htmlLinkColor: '#8be9fd',
+	htmlTableBackgroundColor: '#6272a4',
+	htmlCodeBackgroundColor: '#44475a',
+	htmlCodeBorderColor: '#f8f8f2',
+	htmlCodeColor: '#50fa7b',
+
+	editorTheme: 'dracula',
 	codeThemeCss: 'atom-one-dark-reasonable.css',
 };
 
@@ -314,6 +357,11 @@ function addExtraStyles(style) {
 
 	style.dropdownList = Object.assign({}, style.inputStyle);
 
+	// In general the highlighted color, used to highlight text or icons, should be the same as selectedColor2
+	// but some times, depending on the theme, it might be too dark or too light, so it can be
+	// specified directly by the theme too.
+	if (!style.highlightedColor) style.highlightedColor = style.selectedColor2;
+
 	return style;
 }
 
@@ -337,8 +385,8 @@ function themeStyle(theme) {
 		textAreaLineHeight: Math.round(globalStyle.textAreaLineHeight * editorFontSize / 12),
 
 		// For WebView - must correspond to the properties above
-		htmlFontSize: Math.round(15 * zoomRatio) + 'px',
-		htmlLineHeight: '1.6em', //Math.round(20 * zoomRatio) + 'px'
+		htmlFontSize: `${Math.round(15 * zoomRatio)}px`,
+		htmlLineHeight: '1.6em', // Math.round(20 * zoomRatio) + 'px'
 
 		htmlCodeFontSize: '.9em',
 	};
@@ -357,6 +405,8 @@ function themeStyle(theme) {
 		output = Object.assign({}, output, solarizedLightStyle);
 	} else if (theme == Setting.THEME_SOLARIZED_DARK) {
 		output = Object.assign({}, output, solarizedDarkStyle);
+	} else if (theme == Setting.THEME_DRACULA) {
+		output = Object.assign({}, output, draculaStyle);
 	}
 
 	// Note: All the theme specific things should go in addExtraStyles

@@ -38,6 +38,24 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 		padding: .8em;
 		border: 1px solid #ccc;
 	}
+
+	.page-markdown table pre,
+	.page-markdown table blockquote {
+		margin-bottom: 0;
+	}
+
+	.page-markdown table pre,
+	.page-markdown table blockquote {
+		margin-bottom: 0;
+	}
+
+	.page-markdown table pre {
+		background-color: rgba(0,0,0,0);
+		border: none;
+		margin: 0;
+		padding: 0;
+	}
+
 	h1, h2 {
 		border-bottom: 1px solid #eaecef;
 		padding-bottom: 0.3em;
@@ -64,6 +82,10 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 	pre {
 		font-size: .85em;
 	}
+	blockquote {
+		font-size: 1em;
+		color: #555;
+	};
 	#toc ul {
 		margin-bottom: 10px;
 	}
@@ -202,9 +224,10 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 		opacity: 0;
 		width: 1.3em;
 		font-size: 0.7em;
-		margin-left: -1.3em;
+		margin-left: 0.4em;
 		line-height: 1em;
 		text-decoration: none;
+		transition: opacity 0.3s;
 	}
 	a.heading-anchor:hover,
 	h1:hover a.heading-anchor,
@@ -228,7 +251,7 @@ https://github.com/laurent22/joplin/blob/master/{{{sourceMarkdownFile}}}
 
 <body>
 
-<div class="container">
+<div class="container page-{{sourceMarkdownName}}">
 
 <div class="header">
 	<a class="forkme" href="https://github.com/laurent22/joplin"><img src="{{{imageBaseUrl}}}/ForkMe.png"/></a>
@@ -373,7 +396,7 @@ function markdownToHtml(md, templateParams) {
 			let temp = output;
 			let index = 1;
 			while (doneNames.indexOf(temp) >= 0) {
-				temp = output + '-' + index;
+				temp = `${output}-${index}`;
 				index++;
 			}
 			output = temp;
@@ -388,7 +411,7 @@ function markdownToHtml(md, templateParams) {
 				const token = new Token('heading_anchor_open', 'a', 1);
 				token.attrs = [
 					['name', anchorName],
-					['href', '#' + anchorName],
+					['href', `#${anchorName}`],
 					['class', 'heading-anchor'],
 				];
 				output.push(token);
@@ -426,7 +449,8 @@ function markdownToHtml(md, templateParams) {
 				const anchorName = headingTextToAnchorName(token.content, doneNames);
 				doneNames.push(anchorName);
 				const anchorTokens = createAnchorTokens(anchorName);
-				token.children = anchorTokens.concat(token.children);
+				// token.children = anchorTokens.concat(token.children);
+				token.children = token.children.concat(anchorTokens);
 			}
 		}
 	});
@@ -439,10 +463,14 @@ let tocHtml_ = null;
 const tocRegex_ = /<!-- TOC -->([^]*)<!-- TOC -->/;
 function tocMd() {
 	if (tocMd_) return tocMd_;
-	const md = fs.readFileSync(rootDir + '/README.md', 'utf8');
+	const md = fs.readFileSync(`${rootDir}/README.md`, 'utf8');
 	const toc = md.match(tocRegex_);
 	tocMd_ = toc[1];
 	return tocMd_;
+}
+
+function replaceGitHubByJoplinAppLinks(md) {
+	return md.replace(/https:\/\/github.com\/laurent22\/joplin\/blob\/master\/readme\/(.*)\.md(#[^\s)]+|)/g, 'https://joplinapp.org/$1/$2');
 }
 
 function tocHtml() {
@@ -451,9 +479,9 @@ function tocHtml() {
 	const markdownIt = new MarkdownIt();
 	let md = tocMd();
 	md = md.replace(/# Table of contents/, '');
-	md = md.replace(/https:\/\/github.com\/laurent22\/joplin\/blob\/master\/readme\/(.*)\.md/g, 'https://joplinapp.org/$1');
+	md = replaceGitHubByJoplinAppLinks(md);
 	tocHtml_ = markdownIt.render(md);
-	tocHtml_ = '<div id="toc">' + tocHtml_ + '</div>';
+	tocHtml_ = `<div id="toc">${tocHtml_}</div>`;
 	return tocHtml_;
 }
 
@@ -462,7 +490,7 @@ function renderMdToHtml(md, targetPath, templateParams) {
 	md = md.replace(/# Joplin\n/, '');
 
 	templateParams.baseUrl = 'https://joplinapp.org';
-	templateParams.imageBaseUrl = templateParams.baseUrl + '/images';
+	templateParams.imageBaseUrl = `${templateParams.baseUrl}/images`;
 	templateParams.tocHtml = tocHtml();
 
 	const title = [];
@@ -473,6 +501,8 @@ function renderMdToHtml(md, targetPath, templateParams) {
 		title.push(templateParams.title);
 		title.push('Joplin');
 	}
+
+	md = replaceGitHubByJoplinAppLinks(md);
 
 	templateParams.pageTitle = title.join(' | ');
 	const html = markdownToHtml(md, templateParams);
@@ -485,7 +515,7 @@ function renderFileToHtml(sourcePath, targetPath, templateParams) {
 }
 
 function makeHomePageMd() {
-	let md = fs.readFileSync(rootDir + '/README.md', 'utf8');
+	let md = fs.readFileSync(`${rootDir}/README.md`, 'utf8');
 	md = md.replace(tocRegex_, '');
 
 	// HACK: GitHub needs the \| or the inline code won't be displayed correctly inside the table,
@@ -498,7 +528,7 @@ function makeHomePageMd() {
 async function main() {
 	tocMd();
 
-	renderMdToHtml(makeHomePageMd(), rootDir + '/docs/index.html', {});
+	renderMdToHtml(makeHomePageMd(), `${rootDir}/docs/index.html`, {});
 
 	const sources = [
 		[ 'readme/changelog.md', 'docs/changelog/index.html', { title: 'Changelog (Desktop App)' } ],
@@ -515,27 +545,16 @@ async function main() {
 		[ 'readme/terminal.md', 'docs/terminal/index.html', { title: 'Terminal Application' } ],
 		[ 'readme/api.md', 'docs/api/index.html', { title: 'REST API' } ],
 		[ 'readme/prereleases.md', 'docs/prereleases/index.html', { title: 'Pre-releases' } ],
+		[ 'readme/markdown.md', 'docs/markdown/index.html', { title: 'Markdown Guide' } ],
 	];
+
+	const path = require('path');
 
 	for (const source of sources) {
 		source[2].sourceMarkdownFile = source[0];
-		renderFileToHtml(rootDir + '/' + source[0], rootDir + '/' + source[1], source[2]);
+		source[2].sourceMarkdownName = path.basename(source[0], path.extname(source[0]));
+		renderFileToHtml(`${rootDir}/${source[0]}`, `${rootDir}/${source[1]}`, source[2]);
 	}
-
-	// renderFileToHtml(rootDir + '/readme/changelog.md', rootDir + '/docs/changelog/index.html', { title: 'Changelog (Desktop App)' });
-	// renderFileToHtml(rootDir + '/readme/changelog_cli.md', rootDir + '/docs/changelog_cli/index.html', { title: 'Changelog (CLI App)' });
-	// renderFileToHtml(rootDir + '/readme/clipper.md', rootDir + '/docs/clipper/index.html', { title: 'Web Clipper' });
-	// renderFileToHtml(rootDir + '/readme/debugging.md', rootDir + '/docs/debugging/index.html', { title: 'Debugging' });
-	// renderFileToHtml(rootDir + '/readme/desktop.md', rootDir + '/docs/desktop/index.html', { title: 'Desktop Application' });
-	// renderFileToHtml(rootDir + '/readme/donate.md', rootDir + '/docs/donate/index.html', { title: 'Donate' });
-	// renderFileToHtml(rootDir + '/readme/e2ee.md', rootDir + '/docs/e2ee/index.html', { title: 'End-To-End Encryption' });
-	// renderFileToHtml(rootDir + '/readme/faq.md', rootDir + '/docs/faq/index.html', { title: 'FAQ' });
-	// renderFileToHtml(rootDir + '/readme/mobile.md', rootDir + '/docs/mobile/index.html', { title: 'Mobile Application' });
-	// renderFileToHtml(rootDir + '/readme/spec.md', rootDir + '/docs/spec/index.html', { title: 'Specifications' });
-	// renderFileToHtml(rootDir + '/readme/stats.md', rootDir + '/docs/stats/index.html', { title: 'Statistics' });
-	// renderFileToHtml(rootDir + '/readme/terminal.md', rootDir + '/docs/terminal/index.html', { title: 'Terminal Application' });
-	// renderFileToHtml(rootDir + '/readme/api.md', rootDir + '/docs/api/index.html', { title: 'REST API' });
-	// renderFileToHtml(rootDir + '/readme/prereleases.md', rootDir + '/docs/prereleases/index.html', { title: 'Pre-releases' });
 }
 
 main().catch((error) => {

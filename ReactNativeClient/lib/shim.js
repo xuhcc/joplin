@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/no-unused-vars: 0, no-unused-vars: ["error", { "argsIgnorePattern": ".*" }], */
+
 let shim = {};
 
 shim.isNode = () => {
@@ -36,7 +38,12 @@ shim.platformName = function() {
 	if (shim.isWindows()) return 'win32';
 	if (shim.isLinux()) return 'linux';
 	if (shim.isFreeBSD()) return 'freebsd';
+	if (process && process.platform) return process.platform;
 	throw new Error('Cannot determine platform');
+};
+
+shim.mobilePlatform = function() {
+	return ''; // Default if we're not on mobile (React Native)
 };
 
 // https://github.com/cheton/is-electron
@@ -190,6 +197,10 @@ shim.injectedJs = name => '';
 
 shim.loadCssFromJs = name => {
 	throw new Error('Not implemented');
+};
+
+shim.isTestingEnv = () => {
+	return false;
 };
 
 module.exports = { shim };

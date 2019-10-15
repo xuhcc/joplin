@@ -22,6 +22,7 @@ class Setting extends BaseModel {
 		if (this.metadata_) return this.metadata_;
 
 		const platform = shim.platformName();
+		const mobilePlatform = shim.mobilePlatform();
 
 		const emptyDirWarning = _('Attention: If you change this location, make sure you copy all your content to it before syncing, otherwise all files will be removed! See the FAQ for more details: %s', 'https://joplinapp.org/faq/');
 
@@ -30,6 +31,12 @@ class Setting extends BaseModel {
 		// public for the mobile and desktop apps because they are handled separately in menus.
 
 		this.metadata_ = {
+			'clientId': {
+				value: '',
+				type: Setting.TYPE_STRING,
+				public: false,
+			},
+
 			'sync.target': {
 				value: SyncTargetRegistry.nameToId('dropbox'),
 				type: Setting.TYPE_INT,
@@ -218,6 +225,7 @@ class Setting extends BaseModel {
 					output[Setting.THEME_LIGHT] = _('Light');
 					output[Setting.THEME_DARK] = _('Dark');
 					if (platform !== 'mobile') {
+						output[Setting.THEME_DRACULA] = _('Dracula');
 						output[Setting.THEME_SOLARIZED_LIGHT] = _('Solarised Light');
 						output[Setting.THEME_SOLARIZED_DARK] = _('Solarised Dark');
 					}
@@ -342,7 +350,42 @@ class Setting extends BaseModel {
 			'encryption.passwordCache': { value: {}, type: Setting.TYPE_OBJECT, public: false, secure: true },
 			'style.zoom': { value: 100, type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], section: 'appearance', label: () => _('Global zoom percentage'), minimum: 50, maximum: 500, step: 10 },
 			'style.editor.fontSize': { value: 13, type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], section: 'appearance', label: () => _('Editor font size'), minimum: 4, maximum: 50, step: 1 },
-			'style.editor.fontFamily': { value: '', type: Setting.TYPE_STRING, public: true, appTypes: ['desktop'], section: 'appearance', label: () => _('Editor font family'), description: () => _('This must be *monospace* font or it will not work properly. If the font is incorrect or empty, it will default to a generic monospace font.') },
+			'style.editor.fontFamily':
+				(mobilePlatform) ?
+					({
+						value: Setting.FONT_DEFAULT,
+						type: Setting.TYPE_STRING,
+						isEnum: true,
+						public: true,
+						label: () => _('Editor font'),
+						appTypes: ['mobile'],
+						section: 'appearance',
+						options: () => {
+							// IMPORTANT: The font mapping must match the one in global-styles.js::editorFont()
+							if (mobilePlatform === 'ios') {
+								return {
+									[Setting.FONT_DEFAULT]: 'Default',
+									[Setting.FONT_MENLO]: 'Menlo',
+									[Setting.FONT_COURIER_NEW]: 'Courier New',
+									[Setting.FONT_AVENIR]: 'Avenir',
+								};
+							}
+							return {
+								[Setting.FONT_DEFAULT]: 'Default',
+								[Setting.FONT_MONOSPACE]: 'Monospace',
+							};
+						},
+					}) : {
+						value: '',
+						type: Setting.TYPE_STRING,
+						public: true,
+						appTypes: ['desktop'],
+						section: 'appearance',
+						label: () => _('Editor font family'),
+						description: () =>
+							_('This must be *monospace* font or it will not work properly. If the font ' +
+						'is incorrect or empty, it will default to a generic monospace font.'),
+					},
 			'style.sidebar.width': { value: 150, minimum: 80, maximum: 400, type: Setting.TYPE_INT, public: false, appTypes: ['desktop'] },
 			'style.noteList.width': { value: 150, minimum: 80, maximum: 400, type: Setting.TYPE_INT, public: false, appTypes: ['desktop'] },
 			autoUpdateEnabled: { value: true, type: Setting.TYPE_BOOL, section: 'application', public: true, appTypes: ['desktop'], label: () => _('Automatically update the application') },
@@ -372,6 +415,23 @@ class Setting extends BaseModel {
 			tagHeaderIsExpanded: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
 			folderHeaderIsExpanded: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
 			editor: { value: '', type: Setting.TYPE_STRING, subType: 'file_path_and_args', public: true, appTypes: ['cli', 'desktop'], label: () => _('Text editor command'), description: () => _('The editor command (may include arguments) that will be used to open a note. If none is provided it will try to auto-detect the default editor.') },
+			'export.pdfPageSize': { value: 'A4', type: Setting.TYPE_STRING, isEnum: true, public: true, appTypes: ['desktop'], label: () => _('Page size for PDF export'), options: () => {
+				return {
+					'A4': _('A4'),
+					'Letter': _('Letter'),
+					'A3': _('A3'),
+					'A5': _('A5'),
+					'Tabloid': _('Tabloid'),
+					'Legal': _('Legal'),
+				};
+			}},
+			'export.pdfPageOrientation': { value: 'portrait', type: Setting.TYPE_STRING, isEnum: true, public: true, appTypes: ['desktop'], label: () => _('Page orientation for PDF export'), options: () => {
+				return {
+					'portrait': _('Portrait'),
+					'landscape': _('Landscape'),
+				};
+			}},
+
 
 			'net.customCertificates': {
 				value: '',
@@ -396,6 +456,8 @@ class Setting extends BaseModel {
 				appTypes: ['desktop', 'cli'],
 				label: () => _('Ignore TLS certificate errors'),
 			},
+
+			'sync.wipeOutFailSafe': { value: true, type: Setting.TYPE_BOOL, public: true, section: 'sync', label: () => _('Fail-safe: Do not wipe out local data when sync target is empty (often the result of a misconfiguration or bug)') },
 
 			'api.token': { value: null, type: Setting.TYPE_STRING, public: false },
 			'api.port': { value: null, type: Setting.TYPE_INT, public: true, appTypes: ['cli'], description: () => _('Specify the port that should be used by the API server. If not set, a default will be used.') },
@@ -432,7 +494,7 @@ class Setting extends BaseModel {
 
 	static settingMetadata(key) {
 		const metadata = this.metadata();
-		if (!(key in metadata)) throw new Error('Unknown key: ' + key);
+		if (!(key in metadata)) throw new Error(`Unknown key: ${key}`);
 		let output = Object.assign({}, metadata[key]);
 		output.key = key;
 		return output;
@@ -513,7 +575,7 @@ class Setting extends BaseModel {
 	}
 
 	static setConstant(key, value) {
-		if (!(key in this.constants_)) throw new Error('Unknown constant key: ' + key);
+		if (!(key in this.constants_)) throw new Error(`Unknown constant key: ${key}`);
 		this.constants_[key] = value;
 	}
 
@@ -590,9 +652,9 @@ class Setting extends BaseModel {
 		if (md.type == Setting.TYPE_BOOL) return value ? '1' : '0';
 		if (md.type == Setting.TYPE_ARRAY) return value ? JSON.stringify(value) : '[]';
 		if (md.type == Setting.TYPE_OBJECT) return value ? JSON.stringify(value) : '{}';
-		if (md.type == Setting.TYPE_STRING) return value ? value + '' : '';
+		if (md.type == Setting.TYPE_STRING) return value ? `${value}` : '';
 
-		throw new Error('Unhandled value type: ' + md.type);
+		throw new Error(`Unhandled value type: ${md.type}`);
 	}
 
 	static filterValue(key, value) {
@@ -631,10 +693,10 @@ class Setting extends BaseModel {
 
 		if (md.type === Setting.TYPE_STRING) {
 			if (!value) return '';
-			return value + '';
+			return `${value}`;
 		}
 
-		throw new Error('Unhandled value type: ' + md.type);
+		throw new Error(`Unhandled value type: ${md.type}`);
 	}
 
 	static value(key) {
@@ -652,7 +714,7 @@ class Setting extends BaseModel {
 		if (key in this.constants_) {
 			const v = this.constants_[key];
 			const output = typeof v === 'function' ? v() : v;
-			if (output == 'SET_ME') throw new Error('Setting constant has not been set: ' + key);
+			if (output == 'SET_ME') throw new Error(`Setting constant has not been set: ${key}`);
 			return output;
 		}
 
@@ -693,8 +755,8 @@ class Setting extends BaseModel {
 
 	static enumOptions(key) {
 		const metadata = this.metadata();
-		if (!metadata[key]) throw new Error('Unknown key: ' + key);
-		if (!metadata[key].options) throw new Error('No options for: ' + key);
+		if (!metadata[key]) throw new Error(`Unknown key: ${key}`);
+		if (!metadata[key].options) throw new Error(`No options for: ${key}`);
 		return metadata[key].options();
 	}
 
@@ -819,6 +881,21 @@ class Setting extends BaseModel {
 		if (name === 'plugins') return _('Plugins');
 		if (name === 'application') return _('Application');
 		if (name === 'revisionService') return _('Note History');
+		if (name === 'encryption') return _('Encryption');
+		if (name === 'server') return _('Web Clipper');
+		return name;
+	}
+
+	static sectionNameToIcon(name) {
+		if (name === 'general') return 'fa-sliders';
+		if (name === 'sync') return 'fa-refresh';
+		if (name === 'appearance') return 'fa-pencil';
+		if (name === 'note') return 'fa-file-text-o';
+		if (name === 'plugins') return 'fa-puzzle-piece';
+		if (name === 'application') return 'fa-cog';
+		if (name === 'revisionService') return 'fa-archive-org';
+		if (name === 'encryption') return 'fa-key-modern';
+		if (name === 'server') return 'fa-hand-scissors-o';
 		return name;
 	}
 
@@ -839,6 +916,13 @@ Setting.THEME_LIGHT = 1;
 Setting.THEME_DARK = 2;
 Setting.THEME_SOLARIZED_LIGHT = 3;
 Setting.THEME_SOLARIZED_DARK = 4;
+Setting.THEME_DRACULA = 5;
+
+Setting.FONT_DEFAULT = 0;
+Setting.FONT_MENLO = 1;
+Setting.FONT_COURIER_NEW = 2;
+Setting.FONT_AVENIR = 3;
+Setting.FONT_MONOSPACE = 4;
 
 Setting.DATE_FORMAT_1 = 'DD/MM/YYYY';
 Setting.DATE_FORMAT_2 = 'DD/MM/YY';
@@ -864,6 +948,7 @@ Setting.constants_ = {
 	templateDir: '',
 	tempDir: '',
 	openDevTools: false,
+	syncVersion: 1,
 };
 
 Setting.autoSaveEnabled = true;

@@ -1,5 +1,23 @@
 # Joplin terminal app changelog
 
+## [cli-v1.0.149](https://github.com/laurent22/joplin/releases/tag/cli-v1.0.149) - 2019-09-27T21:18:57Z
+
+- New: Add support to Termux by returning a default when platform name cannot be determined (#1905)
+
+## [cli-v1.0.148](https://github.com/laurent22/joplin/releases/tag/cli-v1.0.148) - 2019-09-27T18:42:36Z
+
+- Improved: Improves deletion fail-safe so it is based on percentage of notes deleted. And display warning on sidebar.
+- Improved: Log last requests in case of a sync error
+
+## [cli-v1.0.147](https://github.com/laurent22/joplin/releases/tag/cli-v1.0.147) - 2019-09-25T21:26:24Z
+
+- New: Import Evernote notes as HTML (#1887)
+- New: Added fail-safe to prevent data from being wiped out when the sync target is empty
+- Improved: Also allow importing TXT files with markdown
+- Improved: Upgrade joplin-turndown-plugin-gfm to fix import of certain Enex tables
+- Fixed: Fixed import of notes that contain links with hashes
+- Fixed: Fixed link issue following last update
+
 ## [cli-v1.0.146](https://github.com/laurent22/joplin/releases/tag/cli-v1.0.146) - 2019-09-08T19:12:41Z
 
 - Fixed: Fixed regression that was making installation fail

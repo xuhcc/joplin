@@ -5,7 +5,7 @@ const FsDriverBase = require('lib/fs-driver-base');
 class FsDriverNode extends FsDriverBase {
 	fsErrorToJsError_(error, path = null) {
 		let msg = error.toString();
-		if (path !== null) msg += '. Path: ' + path;
+		if (path !== null) msg += `. Path: ${path}`;
 		let output = new Error(msg);
 		if (error.code) output.code = error.code;
 		return output;
@@ -119,7 +119,7 @@ class FsDriverNode extends FsDriverBase {
 		let output = [];
 		for (let i = 0; i < items.length; i++) {
 			const item = items[i];
-			let stat = await this.stat(path + '/' + item);
+			let stat = await this.stat(`${path}/${item}`);
 			if (!stat) continue; // Has been deleted between the readdir() call and now
 			stat.path = stat.path.substr(path.length + 1);
 			output.push(stat);
@@ -173,14 +173,14 @@ class FsDriverNode extends FsDriverBase {
 	}
 
 	async readFileChunk(handle, length, encoding = 'base64') {
-		//let buffer = new Buffer(length);
+		// let buffer = new Buffer(length);
 		let buffer = Buffer.alloc(length);
 		const result = await fs.read(handle, buffer, 0, length, null);
 		if (!result.bytesRead) return null;
 		buffer = buffer.slice(0, result.bytesRead);
 		if (encoding === 'base64') return buffer.toString('base64');
 		if (encoding === 'ascii') return buffer.toString('ascii');
-		throw new Error('Unsupported encoding: ' + encoding);
+		throw new Error(`Unsupported encoding: ${encoding}`);
 	}
 }
 
