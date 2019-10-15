@@ -1,5 +1,9 @@
 # Joplin
 
+This is a fork of Joplin project. See [comparison](https://github.com/xuhcc/joplin/compare/release...xuhcc:fork-release).
+
+* * *
+
 [![Donate](https://joplinapp.org/images/badges/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=E8JMYD2LQ8MMA&lc=GB&item_name=Joplin+Development&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted) [![Become a patron](https://joplinapp.org/images/badges/Patreon-Badge.svg)](https://www.patreon.com/joplin)
 
 * * *
