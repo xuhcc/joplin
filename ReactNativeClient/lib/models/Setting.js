@@ -36,7 +36,21 @@ class Setting extends BaseModel {
 				type: Setting.TYPE_STRING,
 				public: false,
 			},
-
+			'editor.keyboardMode': {
+				value: 'default',
+				type: Setting.TYPE_STRING,
+				public: true,
+				appTypes: ['desktop'],
+				isEnum: true,
+				label: () => _('Keyboard Mode'),
+				options: () => {
+					let output = {};
+					output['default'] = _('Default');
+					output['emacs'] = _('Emacs');
+					output['vim'] = _('Vim');
+					return output;
+				},
+			},
 			'sync.target': {
 				value: SyncTargetRegistry.nameToId('dropbox'),
 				type: Setting.TYPE_INT,
@@ -228,9 +242,24 @@ class Setting extends BaseModel {
 						output[Setting.THEME_DRACULA] = _('Dracula');
 						output[Setting.THEME_SOLARIZED_LIGHT] = _('Solarised Light');
 						output[Setting.THEME_SOLARIZED_DARK] = _('Solarised Dark');
+						output[Setting.THEME_NORD] = _('Nord');
 					}
 					return output;
 				},
+			},
+			showNoteCounts: { value: false, type: Setting.TYPE_BOOL, public: true, appTypes: ['desktop'], label: () => _('Show note counts') },
+			layoutButtonSequence: {
+				value: Setting.LAYOUT_ALL,
+				type: Setting.TYPE_INT,
+				public: false,
+				appTypes: ['desktop'],
+				isEnum: true,
+				options: () => ({
+					[Setting.LAYOUT_ALL]: _('%s / %s / %s', _('Editor'), _('Viewer'), _('Split View')),
+					[Setting.LAYOUT_EDITOR_VIEWER]: _('%s / %s', _('Editor'), _('Viewer')),
+					[Setting.LAYOUT_EDITOR_SPLIT]: _('%s / %s', _('Editor'), _('Split View')),
+					[Setting.LAYOUT_VIEWER_SPLIT]: _('%s / %s', _('Viewer'), _('Split View')),
+				}),
 			},
 			uncompletedTodosOnTop: { value: true, type: Setting.TYPE_BOOL, section: 'note', public: true, appTypes: ['cli'], label: () => _('Uncompleted to-dos on top') },
 			showCompletedTodos: { value: true, type: Setting.TYPE_BOOL, section: 'note', public: true, appTypes: ['cli'], label: () => _('Show completed to-dos') },
@@ -311,6 +340,7 @@ class Setting extends BaseModel {
 				appTypes: ['mobile', 'desktop'],
 			},
 			'markdown.softbreaks': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable soft breaks') },
+			'markdown.typographer': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable typographer support') },
 			'markdown.plugin.katex': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable math expressions') },
 			'markdown.plugin.mark': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable ==mark== syntax') },
 			'markdown.plugin.footnote': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable footnotes') },
@@ -412,6 +442,7 @@ class Setting extends BaseModel {
 			},
 			noteVisiblePanes: { value: ['editor', 'viewer'], type: Setting.TYPE_ARRAY, public: false, appTypes: ['desktop'] },
 			sidebarVisibility: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
+			noteListVisibility: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
 			tagHeaderIsExpanded: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
 			folderHeaderIsExpanded: { value: true, type: Setting.TYPE_BOOL, public: false, appTypes: ['desktop'] },
 			editor: { value: '', type: Setting.TYPE_STRING, subType: 'file_path_and_args', public: true, appTypes: ['cli', 'desktop'], label: () => _('Text editor command'), description: () => _('The editor command (may include arguments) that will be used to open a note. If none is provided it will try to auto-detect the default editor.') },
@@ -487,6 +518,9 @@ class Setting extends BaseModel {
 
 			'welcome.wasBuilt': { value: false, type: Setting.TYPE_BOOL, public: false },
 			'welcome.enabled': { value: true, type: Setting.TYPE_BOOL, public: false },
+
+			'camera.type': { value: 0, type: Setting.TYPE_INT, public: false, appTypes: ['mobile'] },
+			'camera.ratio': { value: '4:3', type: Setting.TYPE_STRING, public: false, appTypes: ['mobile'] },
 		};
 
 		return this.metadata_;
@@ -917,12 +951,18 @@ Setting.THEME_DARK = 2;
 Setting.THEME_SOLARIZED_LIGHT = 3;
 Setting.THEME_SOLARIZED_DARK = 4;
 Setting.THEME_DRACULA = 5;
+Setting.THEME_NORD = 6;
 
 Setting.FONT_DEFAULT = 0;
 Setting.FONT_MENLO = 1;
 Setting.FONT_COURIER_NEW = 2;
 Setting.FONT_AVENIR = 3;
 Setting.FONT_MONOSPACE = 4;
+
+Setting.LAYOUT_ALL = 0;
+Setting.LAYOUT_EDITOR_VIEWER = 1;
+Setting.LAYOUT_EDITOR_SPLIT = 2;
+Setting.LAYOUT_VIEWER_SPLIT = 3;
 
 Setting.DATE_FORMAT_1 = 'DD/MM/YYYY';
 Setting.DATE_FORMAT_2 = 'DD/MM/YY';
