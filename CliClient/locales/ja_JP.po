@@ -13,7 +13,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.2.3\n"
+"X-Generator: Poedit 1.8.4\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 msgid "To delete a tag, untag the associated notes."
@@ -1041,7 +1041,7 @@ msgid "This file could not be opened: %s"
 msgstr "次のファイルは開くことができません：%s"
 
 msgid "Save as..."
-msgstr "変更を保存..."
+msgstr "名前を付けて保存..."
 
 msgid "Copy path to clipboard"
 msgstr "クリップボードにパスを保存"
@@ -1387,17 +1387,16 @@ msgstr ""
 "次のFAQをご覧ください: %s"
 
 msgid "Keyboard Mode"
-msgstr ""
+msgstr "キーバインド"
 
-#, fuzzy
 msgid "Default"
-msgstr "既定値: %s"
+msgstr "標準"
 
 msgid "Emacs"
-msgstr ""
+msgstr "Emacs"
 
 msgid "Vim"
-msgstr ""
+msgstr "Vim"
 
 msgid "Synchronisation target"
 msgstr "同期先"
@@ -1484,9 +1483,8 @@ msgstr "Solarised (暗)"
 msgid "Nord"
 msgstr "Nord"
 
-#, fuzzy
 msgid "Show note counts"
-msgstr "トレイアイコンの表示"
+msgstr "ノートの数を表示"
 
 msgid "Editor"
 msgstr "エディター"
@@ -2157,6 +2155,17 @@ msgstr "OneDriveログイン"
 msgid "Search"
 msgstr "検索"
 
+#, fuzzy
+#~ msgid "Share Notes"
+#~ msgstr "復元されたノート"
+
+#, fuzzy
+#~ msgid "Share Link"
+#~ msgstr "共有"
+
+#~ msgid "All potential ports are in use - please report the issue at %s"
+#~ msgstr "使用候補のポートはすべて利用中です - 問題を %s に報告してください"
+
 #~ msgid "Synchronisation is already in progress. State: %s"
 #~ msgstr "同期作業はすでに実行中です。状態: %s"
 
@@ -2177,9 +2186,6 @@ msgstr "検索"
 
 #~ msgid "Note has been saved."
 #~ msgstr "ノートは保存されました。"
-
-#~ msgid "All potential ports are in use - please report the issue at %s"
-#~ msgstr "使用候補のポートはすべて利用中です - 問題を %s に報告してください"
 
 #~ msgid "Sidebar"
 #~ msgstr "サイドバー"
