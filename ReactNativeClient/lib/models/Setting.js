@@ -284,6 +284,14 @@ class Setting extends BaseModel {
 					return options;
 				},
 			},
+			'editor.autoMatchingBraces': {
+				value: true,
+				type: Setting.TYPE_BOOL,
+				public: true,
+				section: 'note',
+				appTypes: ['desktop'],
+				label: () => _('Auto-pair braces, parenthesis, quotations, etc.'),
+			},
 			'notes.sortOrder.reverse': { value: true, type: Setting.TYPE_BOOL, section: 'note', public: true, label: () => _('Reverse sort order'), appTypes: ['cli'] },
 			'folders.sortOrder.field': {
 				value: 'title',
@@ -342,8 +350,13 @@ class Setting extends BaseModel {
 				label: () => _('Enable auto-save'),
 				appTypes: ['mobile', 'desktop'],
 			},
-			'markdown.softbreaks': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable soft breaks') },
-			'markdown.typographer': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable typographer support') },
+			// Deprecated - use markdown.plugin.*
+			'markdown.softbreaks': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop']},
+			'markdown.typographer': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop']},
+			// Deprecated
+
+			'markdown.plugin.softbreaks': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable soft breaks') },
+			'markdown.plugin.typographer': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable typographer support') },
 			'markdown.plugin.katex': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable math expressions') },
 			'markdown.plugin.mark': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable ==mark== syntax') },
 			'markdown.plugin.footnote': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable footnotes') },
@@ -856,12 +869,14 @@ class Setting extends BaseModel {
 	// { sync.5.path: 'http://example', sync.5.username: 'testing' }
 	// and baseKey is 'sync.5', the function will return
 	// { path: 'http://example', username: 'testing' }
-	static subValues(baseKey, settings) {
+	static subValues(baseKey, settings, options = null) {
+		const includeBaseKeyInName = !!options && !!options.includeBaseKeyInName;
+
 		let output = {};
 		for (let key in settings) {
 			if (!settings.hasOwnProperty(key)) continue;
 			if (key.indexOf(baseKey) === 0) {
-				const subKey = key.substr(baseKey.length + 1);
+				const subKey = includeBaseKeyInName ? key : key.substr(baseKey.length + 1);
 				output[subKey] = settings[key];
 			}
 		}
@@ -1036,7 +1051,7 @@ Setting.constants_ = {
 	profileDir: '',
 	templateDir: '',
 	tempDir: '',
-	openDevTools: false,
+	flagOpenDevTools: false,
 	syncVersion: 1,
 };
 

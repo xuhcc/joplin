@@ -6,7 +6,8 @@
     "linter": "./node_modules/.bin/eslint --fix --ext .js --ext .jsx --ext .ts --ext .tsx",
     "linter-ci": "./node_modules/.bin/eslint --ext .js --ext .jsx --ext .ts --ext .tsx",
     "tsc": "tsc",
-    "tsc-watch": "tsc --watch"
+    "tsc-watch": "tsc --watch",
+    "copyLib": "rsync --delete -a ReactNativeClient/lib/ ElectronClient/app/lib/"
   },
   "husky": {
     "hooks": {
@@ -34,5 +35,8 @@
     "husky": "^3.0.2",
     "lint-staged": "^9.2.1",
     "typescript": "^3.7.3"
+  },
+  "dependencies": {
+    "joplin-renderer": "^1.0.6"
   }
 }

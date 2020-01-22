@@ -39,7 +39,6 @@ const BaseService = require('lib/services/BaseService');
 const SearchEngine = require('lib/services/SearchEngine');
 const KvStore = require('lib/services/KvStore');
 const MigrationService = require('lib/services/MigrationService');
-const CssUtils = require('lib/CssUtils');
 
 SyncTargetRegistry.addClass(SyncTargetFilesystem);
 SyncTargetRegistry.addClass(SyncTargetOneDrive);
@@ -133,7 +132,7 @@ class BaseApplication {
 			}
 
 			if (arg == '--open-dev-tools') {
-				Setting.setConstant('openDevTools', true);
+				Setting.setConstant('flagOpenDevTools', true);
 				argv.splice(0, 1);
 				continue;
 			}
@@ -451,11 +450,14 @@ class BaseApplication {
 			refreshFolders = true;
 		}
 
-		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key.indexOf('folders.sortOrder') === 0) || action.type == 'SETTING_UPDATE_ALL')) {
+		if (this.hasGui() && action.type == 'SETTING_UPDATE_ALL') {
 			refreshFolders = 'now';
 		}
 
-		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key == 'showNoteCounts') || action.type == 'SETTING_UPDATE_ALL')) {
+		if (this.hasGui() && action.type == 'SETTING_UPDATE_ONE' && (
+			action.key.indexOf('folders.sortOrder') === 0 ||
+			action.key == 'showNoteCounts' ||
+			action.key == 'showCompletedTodos')) {
 			refreshFolders = 'now';
 		}
 
@@ -609,11 +611,6 @@ class BaseApplication {
 		BaseModel.db_ = this.database_;
 
 		await Setting.load();
-
-		// Loads app-wide styles. (Markdown preview-specific styles loaded in app.js)
-		const dir = Setting.value('profileDir');
-		const filename = Setting.custom_css_files.JOPLIN_APP;
-		await CssUtils.injectCustomStyles(`${dir}/${filename}`);
 
 		if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
 
