@@ -1,3 +1,7 @@
+
+> joplin@1.0.155 start /Users/laurent/src/joplin-master/CliClient
+> gulp build -L && node 'build/main.js' --profile ~/Temp/TestNotes2 --stack-trace-enabled --log-level debug --env dev "apidoc"
+
 # Joplin API
 
 When the Web Clipper service is enabled, Joplin exposes a [REST API](https://en.wikipedia.org/wiki/Representational_state_transfer) which allows third-party applications to access Joplin's data and to create, modify or delete notes, notebooks, resources or tags.
@@ -71,6 +75,34 @@ Call **GET /ping** to check if the service is available. It should return "Jopli
 # Searching
 
 Call **GET /search?query=YOUR_QUERY** to search for notes. This end-point supports the `field` parameter which is recommended to use so that you only get the data that you need. The query syntax is as described in the main documentation: https://joplinapp.org/#searching
+
+To retrieve non-notes items, such as notebooks or tags, add a `type` parameter and set it to the required [item type name](#item-type-id). In that case, full text search will not be used - instead it will be a simple case-insensitive search. You can also use `*` as a wildcard. This is convenient for example to retrieve notebooks or tags by title.
+
+For example, to retrieve the notebook named `recipes`: **GET /search?query=recipes&type=folder**
+
+To retrieve all the tags that start with `project-`: **GET /search?query=project-*&type=tag**
+
+# Item type IDs
+
+Item type IDs might be refered to in certain object you will retrieve from the API. This is the correspondance between name and ID:
+
+Name | Value
+---- | -----
+note | 1   
+folder | 2   
+setting | 3   
+resource | 4   
+tag | 5   
+note_tag | 6   
+search | 7   
+alarm | 8   
+master_key | 9   
+item_change | 10   
+note_resource | 11   
+resource_local_state | 12   
+revision | 13   
+migration | 14   
+smart_filter | 15   
 
 # Notes
 

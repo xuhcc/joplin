@@ -2,6 +2,7 @@ const { promiseChain } = require('lib/promise-utils.js');
 const { Database } = require('lib/database.js');
 const { sprintf } = require('sprintf-js');
 const Resource = require('lib/models/Resource');
+const { shim } = require('lib/shim.js');
 
 const structureSql = `
 CREATE TABLE folders (
@@ -307,13 +308,19 @@ class JoplinDatabase extends Database {
 		// must be set in the synchronizer too.
 
 		// Note: v16 and v17 don't do anything. They were used to debug an issue.
-		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27];
+		const existingDatabaseVersions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28];
 
 		let currentVersionIndex = existingDatabaseVersions.indexOf(fromVersion);
 
 		// currentVersionIndex < 0 if for the case where an old version of Joplin used with a newer
 		// version of the database, so that migration is not run in this case.
-		if (currentVersionIndex < 0) throw new Error('Unknown profile version. Most likely this is an old version of Joplin, while the profile was created by a newer version. Please upgrade Joplin at https://joplinapp.org and try again.');
+		if (currentVersionIndex < 0) {
+			throw new Error(
+				'Unknown profile version. Most likely this is an old version of Joplin, while the profile was created by a newer version. Please upgrade Joplin at https://joplinapp.org and try again.\n'
+				+ `Joplin version: ${shim.appVersion()}\n`
+				+ `Profile version: ${fromVersion}\n`
+				+ `Expected version: ${existingDatabaseVersions[existingDatabaseVersions.length-1]}`);
+		}
 
 		if (currentVersionIndex == existingDatabaseVersions.length - 1) return fromVersion;
 
@@ -663,6 +670,10 @@ class JoplinDatabase extends Database {
 
 			if (targetVersion == 27) {
 				queries.push(this.addMigrationFile(27));
+			}
+
+			if (targetVersion == 28) {
+				queries.push('CREATE INDEX resources_size ON resources(size)');
 			}
 
 			queries.push({ sql: 'UPDATE version SET version = ?', params: [targetVersion] });

@@ -341,7 +341,17 @@ class BaseItem extends BaseModel {
 			throw e;
 		}
 
-		const cipherText = await this.encryptionService().encryptString(serialized);
+		let cipherText = null;
+
+		try {
+			cipherText = await this.encryptionService().encryptString(serialized);
+		} catch (error) {
+			const msg = [`Could not encrypt item ${item.id}`];
+			if (error && error.message) msg.push(error.message);
+			const newError = new Error(msg.join(': '));
+			newError.stack = error.stack;
+			throw newError;
+		}
 
 		// List of keys that won't be encrypted - mostly foreign keys required to link items
 		// with each others and timestamp required for synchronisation.
@@ -761,7 +771,7 @@ class BaseItem extends BaseModel {
 
 		const output = [];
 		output.push('[');
-		output.push(markdownUtils.escapeLinkText(item.title));
+		output.push(markdownUtils.escapeTitleText(item.title));
 		output.push(']');
 		output.push(`(:/${item.id})`);
 		return output.join('');

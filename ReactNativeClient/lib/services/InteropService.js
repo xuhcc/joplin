@@ -196,7 +196,7 @@ class InteropService {
 		const ModuleClass = require(modulePath);
 		const output = new ModuleClass();
 		const moduleMetadata = this.findModuleByFormat_(type, options.format, options.target);
-		output.setMetadata({options, ...moduleMetadata}); // TODO: Check that this metadata is equivalent to module above
+		output.setMetadata({ options, ...moduleMetadata }); // TODO: Check that this metadata is equivalent to module above
 		return output;
 	}
 
@@ -331,7 +331,7 @@ class InteropService {
 		}
 
 		const exporter = this.newModuleFromPath_('exporter', options);// this.newModuleByFormat_('exporter', exportFormat);
-		await exporter.init(exportPath);
+		await exporter.init(exportPath, options);
 
 		const typeOrder = [BaseModel.TYPE_FOLDER, BaseModel.TYPE_RESOURCE, BaseModel.TYPE_NOTE, BaseModel.TYPE_TAG, BaseModel.TYPE_NOTE_TAG];
 		const context = {

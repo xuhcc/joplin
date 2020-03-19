@@ -62,7 +62,7 @@ class Setting extends BaseModel {
 					return appType !== 'cli' ? null : _('The target to synchonise to. Each sync target may have additional parameters which are named as `sync.NUM.NAME` (all documented below).');
 				},
 				options: () => {
-					return SyncTargetRegistry.idAndLabelPlainObject();
+					return SyncTargetRegistry.idAndLabelPlainObject(platform);
 				},
 			},
 
@@ -212,6 +212,7 @@ class Setting extends BaseModel {
 					options[Setting.DATE_FORMAT_4] = time.formatMsToLocal(now, Setting.DATE_FORMAT_4);
 					options[Setting.DATE_FORMAT_5] = time.formatMsToLocal(now, Setting.DATE_FORMAT_5);
 					options[Setting.DATE_FORMAT_6] = time.formatMsToLocal(now, Setting.DATE_FORMAT_6);
+					options[Setting.DATE_FORMAT_7] = time.formatMsToLocal(now, Setting.DATE_FORMAT_7);
 					return options;
 				},
 			},
@@ -241,11 +242,13 @@ class Setting extends BaseModel {
 					let output = {};
 					output[Setting.THEME_LIGHT] = _('Light');
 					output[Setting.THEME_DARK] = _('Dark');
-					if (platform !== 'mobile') {
+					if (platform !== mobilePlatform) {
 						output[Setting.THEME_DRACULA] = _('Dracula');
 						output[Setting.THEME_SOLARIZED_LIGHT] = _('Solarised Light');
 						output[Setting.THEME_SOLARIZED_DARK] = _('Solarised Dark');
 						output[Setting.THEME_NORD] = _('Nord');
+					} else {
+						output[Setting.THEME_OLED_DARK] = _('OLED Dark');
 					}
 					return output;
 				},
@@ -351,8 +354,8 @@ class Setting extends BaseModel {
 				appTypes: ['mobile', 'desktop'],
 			},
 			// Deprecated - use markdown.plugin.*
-			'markdown.softbreaks': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop']},
-			'markdown.typographer': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop']},
+			'markdown.softbreaks': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop'] },
+			'markdown.typographer': { value: false, type: Setting.TYPE_BOOL, public: false, appTypes: ['mobile', 'desktop'] },
 			// Deprecated
 
 			'markdown.plugin.softbreaks': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable soft breaks') },
@@ -369,6 +372,7 @@ class Setting extends BaseModel {
 			'markdown.plugin.insert': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable ++insert++ syntax') },
 			'markdown.plugin.multitable': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable multimarkdown table extension') },
 			'markdown.plugin.fountain': { value: false, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable Fountain syntax support') },
+			'markdown.plugin.mermaid': { value: true, type: Setting.TYPE_BOOL, section: 'plugins', public: true, appTypes: ['mobile', 'desktop'], label: () => _('Enable Mermaid diagrams support') },
 
 			// Tray icon (called AppIndicator) doesn't work in Ubuntu
 			// http://www.webupd8.org/2017/04/fix-appindicator-not-working-for.html
@@ -394,7 +398,10 @@ class Setting extends BaseModel {
 			'encryption.enabled': { value: false, type: Setting.TYPE_BOOL, public: false },
 			'encryption.activeMasterKeyId': { value: '', type: Setting.TYPE_STRING, public: false },
 			'encryption.passwordCache': { value: {}, type: Setting.TYPE_OBJECT, public: false, secure: true },
-			'style.zoom': { value: 100, type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], section: 'appearance', label: () => _('Global zoom percentage'), minimum: 50, maximum: 500, step: 10 },
+
+			// Deprecated in favour of windowContentZoomFactor
+			'style.zoom': { value: 100, type: Setting.TYPE_INT, public: false, appTypes: ['desktop'], section: 'appearance', label: () => '', minimum: 50, maximum: 500, step: 10 },
+
 			'style.editor.fontSize': { value: 13, type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], section: 'appearance', label: () => _('Editor font size'), minimum: 4, maximum: 50, step: 1 },
 			'style.editor.fontFamily':
 				(mobilePlatform) ?
@@ -454,6 +461,7 @@ class Setting extends BaseModel {
 				appTypes: ['desktop'],
 				label: () => _('Custom stylesheet for rendered Markdown'),
 				section: 'appearance',
+				advanced: true,
 			},
 			'style.customCss.joplinApp': {
 				onClick: () => {
@@ -469,6 +477,8 @@ class Setting extends BaseModel {
 				appTypes: ['desktop'],
 				label: () => _('Custom stylesheet for Joplin-wide app styles'),
 				section: 'appearance',
+				advanced: true,
+				description: () => 'CSS file support is provided for your convenience, but they are advanced settings, and styles you define may break from one version to the next. If you want to use them, please know that it might require regular development work from you to keep them working. The Joplin team cannot make a commitment to keep the application HTML structure stable.',
 			},
 
 			autoUpdateEnabled: { value: true, type: Setting.TYPE_BOOL, section: 'application', public: true, appTypes: ['desktop'], label: () => _('Automatically update the application') },
@@ -508,13 +518,13 @@ class Setting extends BaseModel {
 					'Tabloid': _('Tabloid'),
 					'Legal': _('Legal'),
 				};
-			}},
+			} },
 			'export.pdfPageOrientation': { value: 'portrait', type: Setting.TYPE_STRING, isEnum: true, public: true, appTypes: ['desktop'], label: () => _('Page orientation for PDF export'), options: () => {
 				return {
 					'portrait': _('Portrait'),
 					'landscape': _('Landscape'),
 				};
-			}},
+			} },
 			'image.noresizing': { value: false, type: Setting.TYPE_BOOL, public: true, label: () => _('Do not resize images') },
 
 			'net.customCertificates': {
@@ -576,6 +586,16 @@ class Setting extends BaseModel {
 
 			'camera.type': { value: 0, type: Setting.TYPE_INT, public: false, appTypes: ['mobile'] },
 			'camera.ratio': { value: '4:3', type: Setting.TYPE_STRING, public: false, appTypes: ['mobile'] },
+
+			windowContentZoomFactor: {
+				value: 100,
+				type: Setting.TYPE_INT,
+				public: false,
+				appTypes: ['desktop'],
+				minimum: 30,
+				maximum: 300,
+				step: 10,
+			},
 		};
 
 		return this.metadata_;
@@ -718,6 +738,10 @@ class Setting extends BaseModel {
 		});
 
 		this.scheduleSave();
+	}
+
+	static incValue(key, inc) {
+		return this.setValue(key, this.value(key) + inc);
 	}
 
 	static setObjectKey(settingKey, objectKey, value) {
@@ -1006,6 +1030,7 @@ Setting.TYPE_BUTTON = 6;
 
 Setting.THEME_LIGHT = 1;
 Setting.THEME_DARK = 2;
+Setting.THEME_OLED_DARK = 22;
 Setting.THEME_SOLARIZED_LIGHT = 3;
 Setting.THEME_SOLARIZED_DARK = 4;
 Setting.THEME_DRACULA = 5;
@@ -1028,6 +1053,7 @@ Setting.DATE_FORMAT_3 = 'MM/DD/YYYY';
 Setting.DATE_FORMAT_4 = 'MM/DD/YY';
 Setting.DATE_FORMAT_5 = 'YYYY-MM-DD';
 Setting.DATE_FORMAT_6 = 'DD.MM.YYYY';
+Setting.DATE_FORMAT_7 = 'YYYY.MM.DD';
 
 Setting.TIME_FORMAT_1 = 'HH:mm';
 Setting.TIME_FORMAT_2 = 'h:mm A';

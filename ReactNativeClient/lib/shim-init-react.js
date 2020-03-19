@@ -132,6 +132,10 @@ function shimInit() {
 		Linking.openURL(url);
 	};
 
+	shim.httpAgent = () => {
+		return null;
+	};
+
 	shim.waitForFrame = () => {
 		return new Promise(function(resolve) {
 			requestAnimationFrame(function() {
@@ -142,6 +146,11 @@ function shimInit() {
 
 	shim.mobilePlatform = () => {
 		return Platform.OS;
+	};
+
+	shim.appVersion = () => {
+		const p = require('react-native-version-info').default;
+		return p.appVersion;
 	};
 
 	// NOTE: This is a limited version of createResourceFromPath - unlike the Node version, it
