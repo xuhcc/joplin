@@ -1,7 +1,5 @@
-function addContextAssets(context:any) {
-	if ('mermaid' in context.pluginAssets) return;
-
-	context.pluginAssets['mermaid'] = [
+function style() {
+	return [
 		{ name: 'mermaid.min.js' },
 		{ name: 'mermaid_render.js' },
 		{
@@ -15,6 +13,12 @@ function addContextAssets(context:any) {
 	];
 }
 
+function addContextAssets(context:any) {
+	if ('mermaid' in context.pluginAssets) return;
+
+	context.pluginAssets['mermaid'] = style();
+}
+
 // @ts-ignore: Keep the function signature as-is despite unusued arguments
 function installRule(markdownIt:any, mdOptions:any, ruleOptions:any, context:any) {
 	const defaultRender:Function = markdownIt.renderer.rules.fence || function(tokens:any[], idx:number, options:any, env:any, self:any) {
@@ -25,12 +29,21 @@ function installRule(markdownIt:any, mdOptions:any, ruleOptions:any, context:any
 		const token = tokens[idx];
 		if (token.info !== 'mermaid') return defaultRender(tokens, idx, options, env, self);
 		addContextAssets(context);
-		return `<div class="mermaid">${token.content}</div>`;
+		const contentHtml = markdownIt.utils.escapeHtml(token.content);
+		return `
+			<div class="joplin-editable">
+				<pre class="joplin-source" data-joplin-source-open="\`\`\`mermaid&#10;" data-joplin-source-close="&#10;\`\`\`&#10;">${contentHtml}</pre>
+				<div class="mermaid">${contentHtml}</div>
+			</div>
+		`;
 	};
 }
 
-export default function(context:any, ruleOptions:any) {
-	return function(md:any, mdOptions:any) {
-		installRule(md, mdOptions, ruleOptions, context);
-	};
-}
+export default {
+	install: function(context:any, ruleOptions:any) {
+		return function(md:any, mdOptions:any) {
+			installRule(md, mdOptions, ruleOptions, context);
+		};
+	},
+	style: style,
+};
