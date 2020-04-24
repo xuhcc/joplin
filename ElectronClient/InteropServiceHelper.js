@@ -2,6 +2,9 @@ const { _ } = require('lib/locale');
 const { bridge } = require('electron').remote.require('./bridge');
 const InteropService = require('lib/services/InteropService');
 const Setting = require('lib/models/Setting');
+const Note = require('lib/models/Note.js');
+const Folder = require('lib/models/Folder.js');
+const { friendlySafeFilename } = require('lib/path-utils');
 const md5 = require('md5');
 const url = require('url');
 const { shim } = require('lib/shim');
@@ -49,27 +52,35 @@ class InteropServiceHelper {
 			win = bridge().newBrowserWindow(windowOptions);
 
 			return new Promise((resolve, reject) => {
-				win.webContents.on('did-finish-load', async () => {
+				win.webContents.on('did-finish-load', () => {
 
-					if (target === 'pdf') {
-						try {
-							const data = await win.webContents.printToPDF(options);
-							resolve(data);
-						} catch (error) {
-							reject(error);
-						} finally {
-							cleanup();
+					// did-finish-load will trigger when most assets are done loading, probably
+					// images, JavaScript and CSS. However it seems it might trigger *before*
+					// all fonts are loaded, which will break for example Katex rendering.
+					// So we need to add an additional timer to make sure fonts are loaded
+					// as it doesn't seem there's any easy way to figure that out.
+					setTimeout(async () => {
+						if (target === 'pdf') {
+							try {
+								const data = await win.webContents.printToPDF(options);
+								resolve(data);
+							} catch (error) {
+								reject(error);
+							} finally {
+								cleanup();
+							}
+						} else {
+							win.webContents.print(options, (success, reason) => {
+								// TODO: This is correct but broken in Electron 4. Need to upgrade to 5+
+								// It calls the callback right away with "false" even if the document hasn't be print yet.
+
+								cleanup();
+								if (!success && reason !== 'cancelled') reject(new Error(`Could not print: ${reason}`));
+								resolve();
+							});
 						}
-					} else {
-						win.webContents.print(options, (success, reason) => {
-							// TODO: This is correct but broken in Electron 4. Need to upgrade to 5+
-							// It calls the callback right away with "false" even if the document hasn't be print yet.
+					}, 2000);
 
-							cleanup();
-							if (!success && reason !== 'cancelled') reject(new Error(`Could not print: ${reason}`));
-							resolve();
-						});
-					}
 				});
 
 				win.loadURL(url.format({
@@ -92,6 +103,33 @@ class InteropServiceHelper {
 		return this.exportNoteTo_('printer', noteId, options);
 	}
 
+	static async defaultFilename(noteIds, fileExtension) {
+		if (!noteIds) {
+			return '';
+		}
+
+		const note = await Note.load(noteIds[0]);
+		// In a rare case the passed not will be null, use the id for filename
+		if (note === null) {
+			const filename = friendlySafeFilename(noteIds[0], 100);
+
+			return `${filename}.${fileExtension}`;
+		}
+		const folder = await Folder.load(note.parent_id);
+
+		const filename = friendlySafeFilename(note.title, 100);
+
+		// In a less rare case the folder will be null, just ignore it
+		if (folder === null) {
+			return `${filename}.${fileExtension}`;
+		}
+
+		const foldername = friendlySafeFilename(folder.title, 100);
+
+		// friendlySafeFilename assumes that the file extension is added after
+		return `${foldername} - ${filename}.${fileExtension}`;
+	}
+
 	static async export(dispatch, module, options = null) {
 		if (!options) options = {};
 
@@ -100,6 +138,7 @@ class InteropServiceHelper {
 		if (module.target === 'file') {
 			path = bridge().showSaveDialog({
 				filters: [{ name: module.description, extensions: module.fileExtensions }],
+				defaultPath: await this.defaultFilename(options.sourceNoteIds, module.fileExtensions[0]),
 			});
 		} else {
 			path = bridge().showOpenDialog({
