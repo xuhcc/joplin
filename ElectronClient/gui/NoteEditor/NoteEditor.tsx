@@ -214,7 +214,9 @@ function NoteEditor(props: NoteEditorProps) {
 			// The previously loaded note, that was modified, will be saved via saveNoteIfWillChange()
 		} else {
 			setFormNote(newNote);
-			scheduleSaveNote(newNote);
+			if (props.noteAutoSave === true) {
+				scheduleSaveNote(newNote);
+			}
 		}
 	}, [handleProvisionalFlag, formNote, isNewNote, titleHasBeenManuallyChanged]);
 
@@ -349,6 +351,11 @@ function NoteEditor(props: NoteEditorProps) {
 
 			'showRevisions': () => {
 				setShowRevisions(true);
+			},
+
+			'saveNote': () => {
+				scheduleSaveNote(formNote);
+				setFormNote({ ...formNote, hasChanged: false });
 			},
 		};
 
@@ -563,6 +570,7 @@ const mapStateToProps = (state: any) => {
 		selectedSearchId: state.selectedSearchId,
 		customCss: state.customCss,
 		noteVisiblePanes: state.noteVisiblePanes,
+		noteAutoSave: state.settings['notes.autoSave'],
 	};
 };
 

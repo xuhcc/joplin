@@ -23,6 +23,7 @@ interface NoteToolbarProps {
 	note: any,
 	dispatch: Function,
 	onButtonClick(event:ButtonClickEvent):void,
+	noteAutoSave: boolean,
 }
 
 function styles_(props:NoteToolbarProps) {
@@ -43,6 +44,16 @@ function useToolbarItems(props:NoteToolbarProps) {
 	const toolbarItems = [];
 
 	const selectedNoteFolder = Folder.byId(folders, note.parent_id);
+
+	if (props.noteAutoSave === false && note.hasChanged) {
+		toolbarItems.push({
+			tooltip: _('Save'),
+			iconName: 'fa-save',
+			onClick: () => {
+				onButtonClick({ name: 'saveNote' });
+			},
+		});
+	}
 
 	toolbarItems.push({
 		tooltip: _('Back'),
@@ -156,6 +167,7 @@ const mapStateToProps = (state:any) => {
 		backwardHistoryNotes: state.backwardHistoryNotes,
 		forwardHistoryNotes: state.forwardHistoryNotes,
 		notesParentType: state.notesParentType,
+		noteAutoSave: state.settings['notes.autoSave'],
 	};
 };
 
