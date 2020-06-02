@@ -1,4 +1,5 @@
 const Setting = require('lib/models/Setting.js');
+const Color = require('color');
 
 const themes = {
 	[Setting.THEME_LIGHT]: require('./gui/style/theme/light'),
@@ -29,7 +30,8 @@ const globalStyle = {
 	headerButtonHPadding: 6,
 
 	toolbarHeight: 35,
-	tagItemPadding: 3,
+
+	appearance: 'light',
 };
 
 globalStyle.marginRight = globalStyle.margin;
@@ -83,23 +85,27 @@ globalStyle.buttonStyle = {
 };
 
 function addExtraStyles(style) {
+	style.selectedDividerColor = Color(style.dividerColor).darken(0.2).hex();
+	style.iconColor = Color(style.color).alpha(0.8);
+
 	style.tagStyle = {
 		fontSize: style.fontSize,
 		fontFamily: style.fontFamily,
-		marginTop: style.itemMarginTop * 0.4,
-		marginBottom: style.itemMarginBottom * 0.4,
-		marginRight: style.margin * 0.3,
-		paddingTop: style.tagItemPadding,
-		paddingBottom: style.tagItemPadding,
-		paddingRight: style.tagItemPadding * 2,
-		paddingLeft: style.tagItemPadding * 2,
+		paddingTop: 3,
+		paddingBottom: 3,
+		paddingRight: 8,
+		paddingLeft: 8,
 		backgroundColor: style.raisedBackgroundColor,
 		color: style.raisedColor,
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginRight: 5,
 	};
 
 	style.toolbarStyle = {
 		height: style.toolbarHeight,
-		// minWidth: style.toolbarHeight,
+		minWidth: style.toolbarHeight,
 		display: 'flex',
 		alignItems: 'center',
 		paddingLeft: style.headerButtonHPadding,
@@ -194,10 +200,14 @@ function addExtraStyles(style) {
 		padding: 16,
 		boxShadow: '6px 6px 20px rgba(0,0,0,0.5)',
 		marginTop: 20,
+		maxHeight: '80%',
+		display: 'flex',
+		flexDirection: 'column',
+		overflow: 'auto',
 	};
 
 	style.buttonIconStyle = {
-		color: style.color,
+		color: style.iconColor,
 		marginRight: 6,
 	};
 

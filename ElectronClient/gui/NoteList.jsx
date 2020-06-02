@@ -114,7 +114,6 @@ class NoteListComponent extends React.Component {
 				this.props.dispatch({
 					type: 'NOTE_SELECT',
 					id: item.id,
-					historyAction: 'goto',
 				});
 			}
 		};
@@ -146,7 +145,7 @@ class NoteListComponent extends React.Component {
 				todo_completed: checked ? time.unixMs() : 0,
 			};
 			await Note.save(newNote, { userSideValidation: true });
-			eventManager.emit('todoToggle', { noteId: item.id });
+			eventManager.emit('todoToggle', { noteId: item.id, note: newNote });
 		};
 
 		const hPadding = 10;
@@ -221,7 +220,7 @@ class NoteListComponent extends React.Component {
 			paddingRight: 4,
 			color: theme.color,
 		};
-		const watchedIcon = this.props.watchedNoteFiles.indexOf(item.id) < 0 ? null : <i style={watchedIconStyle} className={'fa fa-external-link'}></i>;
+		const watchedIcon = this.props.watchedNoteFiles.indexOf(item.id) < 0 ? null : <i style={watchedIconStyle} className={'fa fa-share-square'}></i>;
 
 		if (!this.itemAnchorRefs_[item.id]) this.itemAnchorRefs_[item.id] = React.createRef();
 		const ref = this.itemAnchorRefs_[item.id];
