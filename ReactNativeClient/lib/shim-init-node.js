@@ -145,7 +145,7 @@ function shimInit() {
 
 	shim.createResourceFromPath = async function(filePath, defaultProps = null, options = null) {
 		options = Object.assign({
-			resizeLargeImages: 'always', // 'always' or 'ask'
+			resizeLargeImages: 'always', // 'always', 'ask' or 'never'
 		}, options);
 
 		const readChunk = require('read-chunk');
@@ -183,7 +183,7 @@ function shimInit() {
 
 		const targetPath = Resource.fullPath(resource);
 
-		if (['image/jpeg', 'image/jpg', 'image/png'].includes(resource.mime) && (!Setting.value('image.noresizing'))) {
+		if (options.resizeLargeImages !== 'never' && ['image/jpeg', 'image/jpg', 'image/png'].includes(resource.mime) && !Setting.value('image.noresizing')) {
 			const ok = await handleResizeImage_(filePath, targetPath, resource.mime, options.resizeLargeImages);
 			if (!ok) return null;
 		} else {
@@ -212,7 +212,7 @@ function shimInit() {
 		}, options);
 
 		const { basename } = require('path');
-		const { escapeLinkText } = require('lib/markdownUtils');
+		const { escapeTitleText } = require('lib/markdownUtils');
 		const { toFileProtocolPath } = require('lib/path-utils');
 
 		let resource = null;
@@ -232,7 +232,7 @@ function shimInit() {
 		if (!options.createFileURL) {
 			newBody.push(Resource.markdownTag(resource));
 		} else {
-			const filename = escapeLinkText(basename(filePath)); // to get same filename as standard drag and drop
+			const filename = escapeTitleText(basename(filePath)); // to get same filename as standard drag and drop
 			const fileURL = `[${filename}](${toFileProtocolPath(filePath)})`;
 			newBody.push(fileURL);
 		}
@@ -453,6 +453,7 @@ function shimInit() {
 	shim.pathRelativeToCwd = (path) => {
 		return toRelative(process.cwd(), path);
 	};
+
 }
 
 module.exports = { shimInit };
