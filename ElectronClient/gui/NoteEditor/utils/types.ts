@@ -23,6 +23,7 @@ export interface NoteEditorProps {
 	customCss: string,
 	noteVisiblePanes: string[],
 	noteAutoSave: boolean,
+	watchedResources: any,
 }
 
 export interface NoteBodyEditorProps {
@@ -43,6 +44,7 @@ export interface NoteBodyEditorProps {
 	disabled: boolean;
 	dispatch: Function;
 	noteToolbar: any;
+	setLocalSearchResultCount(count: number): void,
 	searchMarkers: any,
 	visiblePanes: string[],
 	keyboardMode: string,

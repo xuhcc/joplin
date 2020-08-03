@@ -37,6 +37,7 @@ _mydocs
 Assets/DownloadBadges*.psd
 node_modules
 Tools/github_oauth_token.txt
+CliClient/tests/support/amazon-s3-auth.json
 _releases
 ReactNativeClient/lib/csstojs/
 ReactNativeClient/lib/rnInjectedJs/
@@ -97,6 +98,8 @@ ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/Toolbar.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/index.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/types.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useCursorUtils.js
+ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useEditorSearch.js
+ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useJoplinMode.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useLineSorting.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useListIdent.js
 ElectronClient/gui/NoteEditor/NoteBody/CodeMirror/utils/useScrollUtils.js
@@ -140,7 +143,8 @@ ReactNativeClient/lib/services/keychain/KeychainServiceDriver.dummy.js
 ReactNativeClient/lib/services/keychain/KeychainServiceDriver.mobile.js
 ReactNativeClient/lib/services/keychain/KeychainServiceDriver.node.js
 ReactNativeClient/lib/services/keychain/KeychainServiceDriverBase.js
-ReactNativeClient/lib/services/ResourceEditWatcher.js
+ReactNativeClient/lib/services/ResourceEditWatcher/index.js
+ReactNativeClient/lib/services/ResourceEditWatcher/reducer.js
 ReactNativeClient/lib/services/rest/actionApi.desktop.js
 ReactNativeClient/lib/services/rest/errors.js
 ReactNativeClient/lib/services/SettingUtils.js
