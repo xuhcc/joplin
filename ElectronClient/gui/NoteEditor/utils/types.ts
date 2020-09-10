@@ -24,6 +24,7 @@ export interface NoteEditorProps {
 	noteVisiblePanes: string[],
 	noteAutoSave: boolean,
 	watchedResources: any,
+	highlightedWords: any[],
 }
 
 export interface NoteBodyEditorProps {

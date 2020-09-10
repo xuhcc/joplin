@@ -1,3 +1,4 @@
+import KeymapService from './KeymapService';
 const BaseService = require('lib/services/BaseService');
 const eventManager = require('lib/eventManager');
 
@@ -75,8 +76,11 @@ export default class CommandService extends BaseService {
 	private commandPreviousStates_:CommandStates = {};
 	private mapStateToPropsIID_:any = null;
 
-	initialize(store:any) {
+	private keymapService:KeymapService = null;
+
+	initialize(store:any, keymapService:KeymapService) {
 		utils.store = store;
+		this.keymapService = keymapService;
 	}
 
 	public on(eventName:string, callback:Function) {
@@ -153,6 +157,7 @@ export default class CommandService extends BaseService {
 		options = {
 			mustExist: true,
 			runtimeMustBeRegistered: false,
+			...options,
 		};
 
 		const command = this.commands_[name];
@@ -244,6 +249,17 @@ export default class CommandService extends BaseService {
 		return command.runtime.title(command.runtime.props);
 	}
 
+	label(commandName:string):string {
+		const command = this.commandByName(commandName);
+		if (!command) throw new Error(`Command: ${commandName} is not declared`);
+		return command.declaration.label();
+	}
+
+	exists(commandName:string):boolean {
+		const command = this.commandByName(commandName, { mustExist: false });
+		return !!command;
+	}
+
 	private extractExecuteArgs(command:Command, executeArgs:any) {
 		if (executeArgs) return executeArgs;
 		if (!command.runtime) throw new Error(`Command: ${command.declaration.name}: Runtime is not defined - make sure it has been registered.`);
@@ -265,7 +281,7 @@ export default class CommandService extends BaseService {
 		};
 	}
 
-	commandToMenuItem(commandName:string, accelerator:string = null, executeArgs:any = null) {
+	commandToMenuItem(commandName:string, executeArgs:any = null) {
 		const command = this.commandByName(commandName);
 
 		const item:any = {
@@ -276,8 +292,10 @@ export default class CommandService extends BaseService {
 			},
 		};
 
-		if (accelerator) item.accelerator = accelerator;
 		if (command.declaration.role) item.role = command.declaration.role;
+		if (this.keymapService.acceleratorExists(commandName)) {
+			item.accelerator = this.keymapService.getAccelerator(commandName);
+		}
 
 		return item;
 	}

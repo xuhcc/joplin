@@ -2,8 +2,6 @@ const Note = require('lib/models/Note.js');
 const Folder = require('lib/models/Folder.js');
 const ArrayUtils = require('lib/ArrayUtils.js');
 const { ALL_NOTES_FILTER_ID } = require('lib/reserved-ids');
-const CommandService = require('lib/services/CommandService').default;
-const resourceEditWatcherReducer = require('lib/services/ResourceEditWatcher/reducer').default;
 
 const defaultState = {
 	notes: [],
@@ -14,6 +12,7 @@ const defaultState = {
 	masterKeys: [],
 	notLoadedMasterKeys: [],
 	searches: [],
+	highlightedWords: [],
 	selectedNoteIds: [],
 	selectedNoteHash: '',
 	selectedFolderId: null,
@@ -948,6 +947,9 @@ const reducer = (state = defaultState, action) => {
 			}
 			newState.selectedNoteIds = [];
 			break;
+		case 'SET_HIGHLIGHTED':
+			newState = Object.assign({}, state, { highlightedWords: action.words });
+			break;
 
 		case 'APP_STATE_SET':
 			newState = Object.assign({}, state);
@@ -1035,10 +1037,6 @@ const reducer = (state = defaultState, action) => {
 	if (action.type === 'NOTE_DELETE') {
 		newState = handleHistory(newState, action);
 	}
-
-	newState = resourceEditWatcherReducer(newState, action);
-
-	CommandService.instance().scheduleMapStateToProps(newState);
 
 	return newState;
 };

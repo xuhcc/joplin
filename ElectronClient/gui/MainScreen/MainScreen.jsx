@@ -224,7 +224,7 @@ class MainScreenComponent extends React.Component {
 
 		this.styles_.messageBox = {
 			width: width,
-			height: 30,
+			height: 50,
 			display: 'flex',
 			alignItems: 'center',
 			paddingLeft: 10,
@@ -315,8 +315,23 @@ class MainScreenComponent extends React.Component {
 			});
 		};
 
+		const onRestartAndUpgrade = async () => {
+			Setting.setValue('sync.upgradeState', Setting.SYNC_UPGRADE_STATE_MUST_DO);
+			await Setting.saveAll();
+			bridge().restart();
+		};
+
 		let msg = null;
-		if (this.props.hasDisabledSyncItems) {
+		if (this.props.shouldUpgradeSyncTarget) {
+			msg = (
+				<span>
+					{_('The sync target needs to be upgraded before Joplin can sync. The operation may take a few minutes to complete and the app needs to be restarted. To proceed please click on the link.')}{' '}
+					<a href="#" onClick={() => onRestartAndUpgrade()}>
+						{_('Restart and upgrade')}
+					</a>
+				</span>
+			);
+		} else if (this.props.hasDisabledSyncItems) {
 			msg = (
 				<span>
 					{_('Some items cannot be synchronised.')}{' '}
@@ -371,7 +386,7 @@ class MainScreenComponent extends React.Component {
 	}
 
 	messageBoxVisible() {
-		return this.props.hasDisabledSyncItems || this.props.showMissingMasterKeyMessage || this.props.showNeedUpgradingMasterKeyMessage || this.props.showShouldReencryptMessage || this.props.hasDisabledEncryptionItems;
+		return this.props.hasDisabledSyncItems || this.props.showMissingMasterKeyMessage || this.props.showNeedUpgradingMasterKeyMessage || this.props.showShouldReencryptMessage || this.props.hasDisabledEncryptionItems || this.props.shouldUpgradeSyncTarget;
 	}
 
 	registerCommands() {
@@ -393,7 +408,7 @@ class MainScreenComponent extends React.Component {
 				color: theme.color,
 				backgroundColor: theme.backgroundColor,
 			},
-			this.props.style,
+			this.props.style
 		);
 		const promptOptions = this.state.promptOptions;
 		const notes = this.props.notes;
@@ -419,7 +434,7 @@ class MainScreenComponent extends React.Component {
 				// A bit of a hack, but for now don't allow changing code view
 				// while a note is being saved as it will cause a problem with
 				// TinyMCE because it won't have time to send its content before
-				// being switch to Ace Editor.
+				// being switch to the Code Editor.
 				if (this.props.hasNotesBeingSaved) return;
 				Setting.toggle('editor.codeView');
 			},
@@ -430,8 +445,8 @@ class MainScreenComponent extends React.Component {
 		headerItems.push({
 			title: _('Search...'),
 			iconName: 'fa-search',
-			onQuery: query => {
-				CommandService.instance().execute('search', { query });
+			onQuery: (query, fuzzy = false) => {
+				CommandService.instance().execute('search', { query, fuzzy });
 			},
 			type: 'search',
 		});
@@ -453,8 +468,7 @@ class MainScreenComponent extends React.Component {
 		const noteContentPropertiesDialogOptions = this.state.noteContentPropertiesDialogOptions;
 		const shareNoteDialogOptions = this.state.shareNoteDialogOptions;
 
-		const codeEditor = Setting.value('editor.betaCodeMirror') ? 'CodeMirror' : 'AceEditor';
-		const bodyEditor = this.props.settingEditorCodeView ? codeEditor : 'TinyMCE';
+		const bodyEditor = this.props.settingEditorCodeView ? 'CodeMirror' : 'TinyMCE';
 
 		return (
 			<div style={style}>
@@ -492,6 +506,7 @@ const mapStateToProps = state => {
 		showMissingMasterKeyMessage: state.notLoadedMasterKeys.length && state.masterKeys.length,
 		showNeedUpgradingMasterKeyMessage: !!EncryptionService.instance().masterKeysThatNeedUpgrading(state.masterKeys).length,
 		showShouldReencryptMessage: state.settings['encryption.shouldReencrypt'] >= Setting.SHOULD_REENCRYPT_YES,
+		shouldUpgradeSyncTarget: state.settings['sync.upgradeState'] === Setting.SYNC_UPGRADE_STATE_SHOULD_DO,
 		selectedFolderId: state.selectedFolderId,
 		sidebarWidth: state.settings['style.sidebar.width'],
 		noteListWidth: state.settings['style.noteList.width'],
