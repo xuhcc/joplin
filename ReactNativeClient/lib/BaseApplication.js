@@ -44,8 +44,8 @@ const KvStore = require('lib/services/KvStore');
 const MigrationService = require('lib/services/MigrationService');
 const { toSystemSlashes } = require('lib/path-utils.js');
 
-const ntpClient = require('lib/vendor/ntp-client');
-ntpClient.dgram = require('dgram');
+// const ntpClient = require('lib/vendor/ntp-client');
+// ntpClient.dgram = require('dgram');
 
 class BaseApplication {
 	constructor() {
@@ -469,7 +469,7 @@ class BaseApplication {
 			refreshNotesUseSelectedNoteId = true;
 		}
 
-		if (action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || action.type === 'FOLDER_AND_NOTE_SELECT' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
+		if (action.type == 'HISTORY_BACKWARD' || action.type == 'HISTORY_FORWARD' || action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || action.type === 'FOLDER_AND_NOTE_SELECT' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
 			Setting.setValue('activeFolderId', newState.selectedFolderId);
 			this.currentFolder_ = newState.selectedFolderId ? await Folder.load(newState.selectedFolderId) : null;
 			refreshNotes = true;
@@ -676,7 +676,7 @@ class BaseApplication {
 		reg.dispatch = () => {};
 
 		BaseService.logger_ = this.logger_;
-		require('lib/ntpDate').setLogger(reg.logger());
+		// require('lib/ntpDate').setLogger(reg.logger());
 
 		this.dbLogger_.addTarget('file', { path: `${profileDir}/log-database.txt` });
 		this.dbLogger_.setLevel(initArgs.logLevel);
