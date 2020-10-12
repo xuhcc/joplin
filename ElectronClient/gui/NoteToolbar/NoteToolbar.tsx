@@ -5,7 +5,7 @@ import ToolbarBase from '../ToolbarBase';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
 // const Folder = require('lib/models/Folder');
-const { _ } = require('lib/locale');
+// const { _ } = require('lib/locale');
 // const { substrWithEllipsis } = require('lib/string-utils');
 
 interface ButtonClickEvent {
@@ -49,8 +49,11 @@ function NoteToolbar(props:NoteToolbarProps) {
 
 		if (props.noteAutoSave === false && props.note.hasChanged) {
 			output.push({
-				label: _('Save'),
-				iconName: 'icon-to-do-list', // Floppy disk icon is not available
+				name: 'save',
+				tooltip: 'Save',
+				//iconName: 'icon-save',
+				// Use title because floppy disk icon is not available
+				title: 'save',
 				onClick: () => {
 					props.onButtonClick({ name: 'saveNote' });
 				},
