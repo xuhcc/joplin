@@ -13,13 +13,18 @@ import useMessageHandler from './utils/useMessageHandler';
 import useWindowCommandHandler from './utils/useWindowCommandHandler';
 import useDropHandler from './utils/useDropHandler';
 import useMarkupToHtml from './utils/useMarkupToHtml';
+import useNoteToolbarButtons from './utils/useNoteToolbarButtons';
 import useFormNote, { OnLoadEvent } from './utils/useFormNote';
+import useFolder from './utils/useFolder';
 import styles_ from './styles';
 import { NoteEditorProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent, NoteBodyEditorProps } from './utils/types';
 import ResourceEditWatcher from '../../lib/services/ResourceEditWatcher/index';
-import CommandService from '../../lib/services/CommandService';
+import CommandService from 'lib/services/CommandService';
+import ToolbarButton from '../ToolbarButton/ToolbarButton';
+import Button, { ButtonLevel } from '../Button/Button';
 
 const { themeStyle } = require('lib/theme');
+const { substrWithEllipsis } = require('lib/string-utils');
 const NoteSearchBar = require('../NoteSearchBar.min.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
@@ -69,6 +74,8 @@ function NoteEditor(props: NoteEditorProps) {
 
 	const formNoteRef = useRef<FormNote>();
 	formNoteRef.current = { ...formNote };
+
+	const formNoteFolder = useFolder({ folderId: formNote.parent_id });
 
 	const {
 		localSearch,
@@ -133,17 +140,17 @@ function NoteEditor(props: NoteEditorProps) {
 		return formNote.saveActionQueue.waitForAllDone();
 	}
 
-	const markupToHtml = useMarkupToHtml({ themeId: props.theme, customCss: props.customCss });
+	const markupToHtml = useMarkupToHtml({ themeId: props.themeId, customCss: props.customCss });
 
 	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
-		const theme = themeStyle(props.theme);
+		const theme = themeStyle(props.themeId);
 
 		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
 		});
 
 		return markupToHtml.allAssets(markupLanguage, theme);
-	}, [props.theme]);
+	}, [props.themeId]);
 
 	const handleProvisionalFlag = useCallback(() => {
 		if (props.isProvisional) {
@@ -348,21 +355,37 @@ function NoteEditor(props: NoteEditorProps) {
 		};
 
 		return <NoteToolbar
-			theme={props.theme}
+			themeId={props.themeId}
 			note={formNote}
 			style={toolbarStyle}
 			onButtonClick={noteToolbar_buttonClick}
 		/>;
 	}
 
+	function renderTagButton() {
+		const info = CommandService.instance().commandToToolbarButton('setTags');
+		return <ToolbarButton
+			themeId={props.themeId}
+			toolbarButtonInfo={info}
+		/>;
+	}
+
 	function renderTagBar() {
-		return props.selectedNoteTags.length ? <TagList items={props.selectedNoteTags} /> : null;
+		const theme = themeStyle(props.themeId);
+		const noteIds = [formNote.id];
+		const instructions = <span onClick={() => { CommandService.instance().execute('setTags', { noteIds }); }} style={{ ...theme.clickableTextStyle, whiteSpace: 'nowrap' }}>Click to add tags...</span>;
+		const tagList = props.selectedNoteTags.length ? <TagList items={props.selectedNoteTags} /> : null;
+
+		return (
+			<div style={{ paddingLeft: 8, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>{tagList}{instructions}</div>
+		);
 	}
 
 	function renderTitleBar() {
+		const theme = themeStyle(props.themeId);
 		const titleBarDate = <span style={styles.titleDate}>{time.formatMsToLocal(formNote.user_updated_time)}</span>;
 		return (
-			<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+			<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: theme.topRowHeight }}>
 				<input
 					type="text"
 					ref={titleInputRef}
@@ -373,6 +396,7 @@ function NoteEditor(props: NoteEditorProps) {
 					value={formNote.title}
 				/>
 				{titleBarDate}
+				{renderNoteToolbar()}
 			</div>
 		);
 	}
@@ -394,7 +418,7 @@ function NoteEditor(props: NoteEditorProps) {
 		markupToHtml: markupToHtml,
 		allAssets: allAssets,
 		disabled: false,
-		theme: props.theme,
+		themeId: props.themeId,
 		dispatch: props.dispatch,
 		noteToolbar: null,// renderNoteToolbar(),
 		onScroll: onScroll,
@@ -404,6 +428,7 @@ function NoteEditor(props: NoteEditorProps) {
 		keyboardMode: Setting.value('editor.keyboardMode'),
 		locale: Setting.value('locale'),
 		onDrop: onDrop,
+		noteToolbarButtonInfos: useNoteToolbarButtons(),
 	};
 
 	let editor = null;
@@ -427,10 +452,10 @@ function NoteEditor(props: NoteEditorProps) {
 	}, []);
 
 	if (showRevisions) {
-		const theme = themeStyle(props.theme);
+		const theme = themeStyle(props.themeId);
 
-		const revStyle = {
-			...props.style,
+		const revStyle:any = {
+			// ...props.style,
 			display: 'inline-flex',
 			padding: theme.margin,
 			verticalAlign: 'top',
@@ -446,19 +471,18 @@ function NoteEditor(props: NoteEditorProps) {
 
 	if (props.selectedNoteIds.length > 1) {
 		return <MultiNoteActions
-			theme={props.theme}
+			themeId={props.themeId}
 			selectedNoteIds={props.selectedNoteIds}
 			notes={props.notes}
 			dispatch={props.dispatch}
 			watchedNoteFiles={props.watchedNoteFiles}
-			style={props.style}
 		/>;
 	}
 
 	function renderSearchBar() {
 		if (!showLocalSearch) return false;
 
-		const theme = themeStyle(props.theme);
+		const theme = themeStyle(props.themeId);
 
 		return (
 			<NoteSearchBar
@@ -492,6 +516,30 @@ function NoteEditor(props: NoteEditorProps) {
 		);
 	}
 
+	function renderSearchInfo() {
+		if (formNoteFolder && ['Search', 'Tag', 'SmartFilter'].includes(props.notesParentType)) {
+			return (
+				<div style={{ paddingTop: 10, paddingBottom: 10 }}>
+					<Button
+						iconName="icon-notebooks"
+						level={ButtonLevel.Primary}
+						title={_('In: %s', substrWithEllipsis(formNoteFolder.title, 0, 100))}
+						onClick={() => {
+							props.dispatch({
+								type: 'FOLDER_AND_NOTE_SELECT',
+								folderId: formNoteFolder.id,
+								noteId: formNote.id,
+							});
+						}}
+					/>
+					<div style={{ flex: 1 }}></div>
+				</div>
+			);
+		} else {
+			return null;
+		}
+	}
+
 	if (formNote.encryption_applied || !formNote.id || !props.noteId) {
 		return renderNoNotes(styles.root);
 	}
@@ -501,14 +549,16 @@ function NoteEditor(props: NoteEditorProps) {
 			<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 				{renderResourceWatchingNotification()}
 				{renderTitleBar()}
-				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-					{renderNoteToolbar()}{renderTagBar()}
-				</div>
+				{renderSearchInfo()}
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
 				</div>
 				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
 					{renderSearchBar()}
+				</div>
+				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: 40 }}>
+					{renderTagButton()}
+					{renderTagBar()}
 				</div>
 				{wysiwygBanner}
 			</div>
@@ -531,7 +581,7 @@ const mapStateToProps = (state: any) => {
 		isProvisional: state.provisionalNoteIds.includes(noteId),
 		editorNoteStatuses: state.editorNoteStatuses,
 		syncStarted: state.syncStarted,
-		theme: state.settings.theme,
+		themeId: state.settings.theme,
 		watchedNoteFiles: state.watchedNoteFiles,
 		notesParentType: state.notesParentType,
 		selectedNoteTags: state.selectedNoteTags,

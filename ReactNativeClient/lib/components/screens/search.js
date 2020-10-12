@@ -11,6 +11,7 @@ const { BaseScreenComponent } = require('lib/components/base-screen.js');
 const { themeStyle } = require('lib/components/global-style.js');
 const DialogBox = require('react-native-dialogbox').default;
 const SearchEngineUtils = require('lib/services/searchengine/SearchEngineUtils');
+const SearchEngine = require('lib/services/searchengine/SearchEngine');
 
 Icon.loadFont();
 
@@ -30,9 +31,9 @@ class SearchScreenComponent extends BaseScreenComponent {
 	}
 
 	styles() {
-		const theme = themeStyle(this.props.theme);
+		const theme = themeStyle(this.props.themeId);
 
-		if (this.styles_[this.props.theme]) return this.styles_[this.props.theme];
+		if (this.styles_[this.props.themeId]) return this.styles_[this.props.themeId];
 		this.styles_ = {};
 
 		const styles = {
@@ -58,8 +59,8 @@ class SearchScreenComponent extends BaseScreenComponent {
 		styles.clearIcon.paddingRight = theme.marginRight;
 		styles.clearIcon.backgroundColor = theme.backgroundColor;
 
-		this.styles_[this.props.theme] = StyleSheet.create(styles);
-		return this.styles_[this.props.theme];
+		this.styles_[this.props.themeId] = StyleSheet.create(styles);
+		return this.styles_[this.props.themeId];
 	}
 
 	componentDidMount() {
@@ -71,18 +72,6 @@ class SearchScreenComponent extends BaseScreenComponent {
 	componentWillUnmount() {
 		this.isMounted_ = false;
 	}
-
-	// UNSAFE_componentWillReceiveProps(newProps) {
-	// 	console.info('UNSAFE_componentWillReceiveProps', newProps);
-
-	// 	let newState = {};
-	// 	if ('query' in newProps && !this.state.query) newState.query = newProps.query;
-
-	// 	if (Object.getOwnPropertyNames(newState).length) {
-	// 		this.setState(newState);
-	// 		this.refreshSearch(newState.query);
-	// 	}
-	// }
 
 	searchTextInput_submit() {
 		const query = this.state.query.trim();
@@ -134,6 +123,14 @@ class SearchScreenComponent extends BaseScreenComponent {
 
 		if (!this.isMounted_) return;
 
+		const parsedQuery = await SearchEngine.instance().parseQuery(query);
+		const highlightedWords = SearchEngine.instance().allParsedQueryTerms(parsedQuery);
+
+		this.props.dispatch({
+			type: 'SET_HIGHLIGHTED',
+			words: highlightedWords,
+		});
+
 		this.setState({ notes: notes });
 	}
 
@@ -144,7 +141,7 @@ class SearchScreenComponent extends BaseScreenComponent {
 	render() {
 		if (!this.isMounted_) return null;
 
-		const theme = themeStyle(this.props.theme);
+		const theme = themeStyle(this.props.themeId);
 
 		const rootStyle = {
 			flex: 1,
@@ -203,7 +200,7 @@ class SearchScreenComponent extends BaseScreenComponent {
 const SearchScreen = connect(state => {
 	return {
 		query: state.searchQuery,
-		theme: state.settings.theme,
+		themeId: state.settings.theme,
 		settings: state.settings,
 		noteSelectionEnabled: state.noteSelectionEnabled,
 	};

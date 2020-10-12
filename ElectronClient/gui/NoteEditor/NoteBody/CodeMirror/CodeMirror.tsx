@@ -9,6 +9,7 @@ import { useScrollHandler, usePrevious, cursorPositionToTextOffset, useRootSize 
 import Toolbar from './Toolbar';
 import styles_ from './styles';
 import { RenderedBody, defaultRenderedBody } from './utils/types';
+import NoteTextViewer  from '../../../NoteTextViewer';
 import Editor from './Editor';
 
 //  @ts-ignore
@@ -17,7 +18,6 @@ const { bridge } = require('electron').remote.require('./bridge');
 const Note = require('lib/models/Note.js');
 const { clipboard } = require('electron');
 const Setting = require('lib/models/Setting.js');
-const NoteTextViewer = require('../../../NoteTextViewer.min');
 const shared = require('lib/components/shared/note-screen-shared.js');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
@@ -37,6 +37,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody()); // Viewer content
 	const [webviewReady, setWebviewReady] = useState(false);
 
+	const previousContent = usePrevious(props.content);
 	const previousRenderedBody = usePrevious(renderedBody);
 	const previousSearchMarkers = usePrevious(props.searchMarkers);
 	const previousContentKey = usePrevious(props.contentKey);
@@ -48,7 +49,6 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	props_onChangeRef.current = props.onChange;
 	const contentKeyHasChangedRef = useRef(false);
 	contentKeyHasChangedRef.current = previousContentKey !== props.contentKey;
-	const theme = themeStyle(props.theme);
 
 	const rootSize = useRootSize({ rootRef });
 
@@ -351,6 +351,8 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	}, [styles.editor.codeMirrorTheme]);
 
 	useEffect(() => {
+		const theme = themeStyle(props.themeId);
+
 		const element = document.createElement('style');
 		element.setAttribute('id', 'codemirrorStyle');
 		document.head.appendChild(element);
@@ -358,6 +360,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			/* These must be important to prevent the codemirror defaults from taking over*/
 			.CodeMirror {
 				font-family: monospace;
+				font-size: ${theme.editorFontSize}px;
 				height: 100% !important;
 				width: 100% !important;
 				color: inherit !important;
@@ -371,37 +374,37 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 				/* be applied to the viewer. */
 				padding-bottom: 400px !important;
 			}
-			
+
 			.cm-header-1 {
 				font-size: 1.5em;
 			}
-			
+
 			.cm-header-2 {
 				font-size: 1.3em;
 			}
-			
+
 			.cm-header-3 {
 				font-size: 1.1em;
 			}
-			
+
 			.cm-header-4, .cm-header-5, .cm-header-6 {
 				font-size: 1em;
 			}
-			
+
 			.cm-header-1, .cm-header-2, .cm-header-3, .cm-header-4, .cm-header-5, .cm-header-6 {
 				line-height: 1.5em;
 			}
-			
+
 			.cm-search-marker {
 				background: ${theme.searchMarkerBackgroundColor};
 				color: ${theme.searchMarkerColor} !important;
 			}
-			
+
 			.cm-search-marker-selected {
 				background: ${theme.selectedColor2};
 				color: ${theme.color2} !important;
 			}
-			
+
 			.cm-search-marker-scrollbar {
 				background: ${theme.searchMarkerBackgroundColor};
 				-moz-box-sizing: border-box;
@@ -415,12 +418,33 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 				background-color: inherit !important;
 				border-bottom: 1px dotted #dc322f;
 			}
+
+			/* The default dark theme colors don't have enough contrast with the background */
+			.cm-s-nord span.cm-comment {
+				color: #9aa4b6 !important;
+			}
+
+			.cm-s-dracula span.cm-comment {
+				color: #a1abc9 !important;
+			}
+
+			.cm-s-monokai span.cm-comment {
+				color: #908b74 !important;
+			}
+
+			.cm-s-material-darker span.cm-comment {
+				color: #878787 !important;
+			}
+
+			.cm-s-solarized.cm-s-dark span.cm-comment {
+				color: #8ba1a7 !important;
+			}
 		`));
 
 		return () => {
 			document.head.removeChild(element);
 		};
-	}, [props.theme]);
+	}, [props.themeId]);
 
 	const webview_domReady = useCallback(() => {
 		setWebviewReady(true);
@@ -478,7 +502,18 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	}, [renderedBody, webviewReady]);
 
 	useEffect(() => {
-		if (props.searchMarkers !== previousSearchMarkers || renderedBody !== previousRenderedBody) {
+		if (!props.searchMarkers) return;
+
+		// If there is a currently active search, it's important to re-search the text as the user
+		// types. However this is slow for performance so we ONLY want it to happen when there is
+		// a search
+
+		// Note that since the CodeMirror component also needs to handle the viewer pane, we need
+		// to check if the rendered body has changed too (it will be changed with a delay after
+		// props.content has been updated).
+		const textChanged = props.searchMarkers.keywords.length > 0 && (props.content !== previousContent || renderedBody !== previousRenderedBody);
+
+		if (props.searchMarkers !== previousSearchMarkers || textChanged) {
 			webviewRef.current.wrappedInstance.send('setMarkers', props.searchMarkers.keywords, props.searchMarkers.options);
 
 			if (editorRef.current) {
@@ -487,7 +522,7 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 				props.setLocalSearchResultCount(matches);
 			}
 		}
-	}, [props.searchMarkers, props.setLocalSearchResultCount, renderedBody]);
+	}, [props.searchMarkers, previousSearchMarkers, props.setLocalSearchResultCount, props.content, previousContent, renderedBody, previousRenderedBody, renderedBody]);
 
 	const cellEditorStyle = useMemo(() => {
 		const output = { ...styles.cellEditor };
@@ -539,17 +574,16 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 		editorRef.current.refresh();
 	}, [rootSize, styles.editor, props.visiblePanes]);
 
-	const editorReadOnly = props.visiblePanes.indexOf('editor') < 0;
-
 	function renderEditor() {
 
 		return (
 			<div style={cellEditorStyle}>
 				<Editor
 					value={props.content}
+					searchMarkers={props.searchMarkers}
 					ref={editorRef}
 					mode={props.contentMarkupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'xml' : 'joplin-markdown'}
-					theme={styles.editor.codeMirrorTheme}
+					codeMirrorTheme={styles.editor.codeMirrorTheme}
 					style={styles.editor}
 					readOnly={props.visiblePanes.indexOf('editor') < 0}
 					autoMatchBraces={Setting.value('editor.autoMatchingBraces')}
@@ -580,9 +614,8 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 		<div style={styles.root} ref={rootRef}>
 			<div style={styles.rowToolbar}>
 				<Toolbar
-					theme={props.theme}
+					themeId={props.themeId}
 					dispatch={props.dispatch}
-					disabled={editorReadOnly}
 				/>
 				{props.noteToolbar}
 			</div>

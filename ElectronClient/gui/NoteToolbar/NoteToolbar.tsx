@@ -1,19 +1,19 @@
 import * as React from 'react';
 import { useEffect, useCallback, useState } from 'react';
 import CommandService from '../../lib/services/CommandService';
+import ToolbarBase from '../ToolbarBase';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
-const Toolbar = require('../Toolbar.min.js');
-const Folder = require('lib/models/Folder');
+// const Folder = require('lib/models/Folder');
 const { _ } = require('lib/locale');
-const { substrWithEllipsis } = require('lib/string-utils');
+// const { substrWithEllipsis } = require('lib/string-utils');
 
 interface ButtonClickEvent {
 	name: string,
 }
 
 interface NoteToolbarProps {
-	theme: number,
+	themeId: number,
 	style: any,
 	folders: any[],
 	watchedNoteFiles: string[],
@@ -27,11 +27,12 @@ interface NoteToolbarProps {
 }
 
 function styles_(props:NoteToolbarProps) {
-	return buildStyle('NoteToolbar', props.theme, (/* theme:any*/) => {
+	return buildStyle('NoteToolbar', props.themeId, (theme:any) => {
 		return {
 			root: {
 				...props.style,
 				borderBottom: 'none',
+				backgroundColor: theme.backgroundColor,
 			},
 		};
 	});
@@ -40,62 +41,28 @@ function styles_(props:NoteToolbarProps) {
 function NoteToolbar(props:NoteToolbarProps) {
 	const styles = styles_(props);
 	const [toolbarItems, setToolbarItems] = useState([]);
-	const selectedNoteFolder = Folder.byId(props.folders, props.note.parent_id);
-	const folderId = selectedNoteFolder ? selectedNoteFolder.id : '';
-	const folderTitle = selectedNoteFolder && selectedNoteFolder.title ? selectedNoteFolder.title : '';
 
 	const cmdService = CommandService.instance();
 
 	const updateToolbarItems = useCallback(() => {
 		const output = [];
 
-		output.push(
-			cmdService.commandToToolbarButton('historyBackward')
-		);
-
-		output.push(
-			cmdService.commandToToolbarButton('historyForward')
-		);
-
-		if (folderId && ['Search', 'Tag', 'SmartFilter'].includes(props.notesParentType)) {
-			output.push({
-				title: _('In: %s', substrWithEllipsis(folderTitle, 0, 16)),
-				tooltip: folderTitle,
-				iconName: 'fa-book',
-				onClick: () => {
-					props.dispatch({
-						type: 'FOLDER_AND_NOTE_SELECT',
-						folderId: folderId,
-						noteId: props.note.id,
-					});
-				},
-			});
-		}
-
 		if (props.noteAutoSave === false && props.note.hasChanged) {
 			output.push({
-				tooltip: _('Save'),
-				iconName: 'fa-save',
+				label: _('Save'),
+				iconName: 'icon-to-do-list', // Floppy disk icon is not available
 				onClick: () => {
 					props.onButtonClick({ name: 'saveNote' });
 				},
 			});
 		}
 
+		output.push(cmdService.commandToToolbarButton('editAlarm'));
+		output.push(cmdService.commandToToolbarButton('toggleVisiblePanes'));
 		output.push(cmdService.commandToToolbarButton('showNoteProperties'));
 
-		if (props.watchedNoteFiles.indexOf(props.note.id) >= 0) {
-			output.push(cmdService.commandToToolbarButton('stopExternalEditing'));
-		} else {
-			output.push(cmdService.commandToToolbarButton('startExternalEditing'));
-		}
-
-		output.push(cmdService.commandToToolbarButton('editAlarm'));
-
-		output.push(cmdService.commandToToolbarButton('setTags'));
-
 		setToolbarItems(output);
-	}, [props.note.id, props.note.body, props.note.hasChanged, folderId, folderTitle, props.watchedNoteFiles, props.notesParentType]);
+	}, [props.note.id, props.note.body, props.note.hasChanged]);
 
 	useEffect(() => {
 		updateToolbarItems();
@@ -105,7 +72,7 @@ function NoteToolbar(props:NoteToolbarProps) {
 		};
 	}, [updateToolbarItems]);
 
-	return <Toolbar style={styles.root} items={toolbarItems} />;
+	return <ToolbarBase style={styles.root} items={toolbarItems} />;
 }
 
 const mapStateToProps = (state:any) => {

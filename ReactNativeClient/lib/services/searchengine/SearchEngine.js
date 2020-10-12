@@ -81,7 +81,7 @@ class SearchEngine {
 				);
 			}
 
-			if (!noteIds.length && (Setting.value('db.fuzzySearchEnabled') == 1)) {
+			if (!noteIds.length && (Setting.value('db.fuzzySearchEnabled') === 1)) {
 				// On the last loop
 				queries.push({ sql: 'INSERT INTO notes_spellfix(word,rank) SELECT term, documents FROM search_aux WHERE col=\'*\'' });
 			}
@@ -433,7 +433,9 @@ class SearchEngine {
 		return await Promise.all(fuzzyMatches);
 	}
 
-	async parseQuery(query, fuzzy = false) {
+	async parseQuery(query, fuzzy = null) {
+		if (fuzzy === null) fuzzy = Setting.value('db.fuzzySearchEnabled') === 1;
+
 		const trimQuotes = (str) => str.startsWith('"') ? str.substr(1, str.length - 2) : str;
 
 		let allTerms = [];
@@ -457,6 +459,15 @@ class SearchEngine {
 			const fuzzyText = await this.fuzzifier(textTerms.filter(x => !(x.quoted || x.wildcard)).map(x => trimQuotes(x.value)));
 			const fuzzyTitle = await this.fuzzifier(titleTerms.filter(x => !x.wildcard).map(x => trimQuotes(x.value)));
 			const fuzzyBody = await this.fuzzifier(bodyTerms.filter(x => !x.wildcard).map(x => trimQuotes(x.value)));
+
+			// Floor the fuzzy scores to 0, 1 and 2.
+			const floorFuzzyScore = (matches) => {
+				for (let i = 0; i < matches.length; i++) matches[i].score = i;
+			};
+
+			fuzzyText.forEach(floorFuzzyScore);
+			fuzzyTitle.forEach(floorFuzzyScore);
+			fuzzyBody.forEach(floorFuzzyScore);
 
 			const phraseTextSearch = textTerms.filter(x => x.quoted);
 			const wildCardSearch = textTerms.concat(titleTerms).concat(bodyTerms).filter(x => x.wildcard);
@@ -610,7 +621,7 @@ class SearchEngine {
 
 		if (!Setting.value('db.ftsEnabled') || ['ja', 'zh', 'ko', 'th'].indexOf(st) >= 0) {
 			return SearchEngine.SEARCH_TYPE_BASIC;
-		} else if ((Setting.value('db.fuzzySearchEnabled') === 1) && options.fuzzy) {
+		} else if (options.fuzzy) {
 			return SearchEngine.SEARCH_TYPE_FTS_FUZZY;
 		} else {
 			return SearchEngine.SEARCH_TYPE_FTS;
@@ -621,6 +632,7 @@ class SearchEngine {
 	async search(searchString, options = null) {
 		options = Object.assign({}, {
 			searchType: SearchEngine.SEARCH_TYPE_AUTO,
+			fuzzy: Setting.value('db.fuzzySearchEnabled') === 1,
 		}, options);
 
 		searchString = this.normalizeText_(searchString);
@@ -641,10 +653,10 @@ class SearchEngine {
 			// when searching.
 			// https://github.com/laurent22/joplin/issues/1075#issuecomment-459258856
 
-			const parsedQuery = await this.parseQuery(searchString, options.fuzzy);
+			const parsedQuery = await this.parseQuery(searchString, searchType === SearchEngine.SEARCH_TYPE_FTS_FUZZY);
 
 			try {
-				const { query, params } =  (searchType === SearchEngine.SEARCH_TYPE_FTS_FUZZY) ? queryBuilder(parsedQuery.allTerms, true) : queryBuilder(parsedQuery.allTerms, false);
+				const { query, params } = queryBuilder(parsedQuery.allTerms, searchType === SearchEngine.SEARCH_TYPE_FTS_FUZZY);
 				const rows = await this.db().selectAll(query, params);
 				this.processResults_(rows, parsedQuery);
 				if (searchType === SearchEngine.SEARCH_TYPE_FTS_FUZZY && !parsedQuery.any) {

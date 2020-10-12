@@ -2,7 +2,7 @@ const React = require('react');
 const { connect } = require('react-redux');
 const { themeStyle } = require('lib/theme');
 const { _ } = require('lib/locale.js');
-const NoteTextViewer = require('./NoteTextViewer.min');
+const NoteTextViewer = require('./NoteTextViewer').default;
 const HelpButton = require('./HelpButton.min');
 const BaseModel = require('lib/BaseModel');
 const Revision = require('lib/models/Revision');
@@ -38,7 +38,7 @@ class NoteRevisionViewerComponent extends React.PureComponent {
 	}
 
 	style() {
-		const theme = themeStyle(this.props.theme);
+		const theme = themeStyle(this.props.themeId);
 
 		const style = {
 			root: {
@@ -114,7 +114,7 @@ class NoteRevisionViewerComponent extends React.PureComponent {
 			this.setState({ note: note });
 		}
 
-		const theme = themeStyle(this.props.theme);
+		const theme = themeStyle(this.props.themeId);
 
 		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
@@ -164,7 +164,7 @@ class NoteRevisionViewerComponent extends React.PureComponent {
 	}
 
 	render() {
-		const theme = themeStyle(this.props.theme);
+		const theme = themeStyle(this.props.themeId);
 		const style = this.style();
 
 		const revisionListItems = [];
@@ -213,7 +213,7 @@ class NoteRevisionViewerComponent extends React.PureComponent {
 
 const mapStateToProps = state => {
 	return {
-		theme: state.settings.theme,
+		themeId: state.settings.theme,
 	};
 };
 
