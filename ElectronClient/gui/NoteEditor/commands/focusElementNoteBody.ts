@@ -1,5 +1,5 @@
-import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandRuntime, CommandDeclaration } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'focusElementNoteBody',
@@ -12,13 +12,6 @@ export const runtime = (comp:any):CommandRuntime => {
 		execute: async () => {
 			comp.editorRef.current.execCommand({ name: 'focus' });
 		},
-		// isEnabled: (props:any):boolean => {
-		// 	return props.sidebarVisibility;
-		// },
-		// mapStateToProps: (state:any):any => {
-		// 	return {
-		// 		sidebarVisibility: state.sidebarVisibility,
-		// 	};
-		// },
+		enabledCondition: 'oneNoteSelected',
 	};
 };

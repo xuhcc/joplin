@@ -1,13 +1,13 @@
 const BaseModel = require('lib/BaseModel.js');
 const { Database } = require('lib/database.js');
-const Setting = require('lib/models/Setting.js');
+const Setting = require('lib/models/Setting').default;
 const ItemChange = require('lib/models/ItemChange.js');
 const JoplinError = require('lib/JoplinError.js');
 const { time } = require('lib/time-utils.js');
 const { sprintf } = require('sprintf-js');
-const { _ } = require('lib/locale.js');
+const { _ } = require('lib/locale');
 const moment = require('moment');
-const markdownUtils = require('lib/markdownUtils');
+const markdownUtils = require('lib/markdownUtils').default;
 
 class BaseItem extends BaseModel {
 	static useUuid() {
@@ -256,9 +256,11 @@ class BaseItem extends BaseModel {
 			propValue = JSON.stringify(propValue);
 		} else if (propValue === null || propValue === undefined) {
 			propValue = '';
+		} else {
+			propValue = `${propValue}`;
 		}
 
-		return propValue;
+		return propValue.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
 	}
 
 	static unserialize_format(type, propName, propValue) {
@@ -279,7 +281,7 @@ class BaseItem extends BaseModel {
 			propValue = Database.formatValue(ItemClass.fieldType(propName), propValue);
 		}
 
-		return propValue;
+		return typeof propValue === 'string' ? propValue.replace(/\\n/g, '\n').replace(/\\r/g, '\r') : propValue;
 	}
 
 	static async serialize(item, shownKeys = null) {

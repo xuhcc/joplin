@@ -1,10 +1,10 @@
-const { uuid } = require('lib/uuid.js');
+const uuid = require('lib/uuid').default;
 const moment = require('moment');
 const BaseModel = require('lib/BaseModel.js');
 const Note = require('lib/models/Note.js');
 const Tag = require('lib/models/Tag.js');
 const Resource = require('lib/models/Resource.js');
-const Setting = require('lib/models/Setting.js');
+const Setting = require('lib/models/Setting').default;
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const { enexXmlToMd } = require('./import-enex-md-gen.js');
 const { enexXmlToHtml } = require('./import-enex-html-gen.js');
@@ -13,6 +13,7 @@ const Levenshtein = require('levenshtein');
 const md5 = require('md5');
 const { Base64Decode } = require('base64-stream');
 const md5File = require('md5-file');
+const shim = require('lib/shim').default;
 
 // const Promise = require('promise');
 const fs = require('fs-extra');
@@ -39,6 +40,16 @@ function extractRecognitionObjId(recognitionXml) {
 }
 
 async function decodeBase64File(sourceFilePath, destFilePath) {
+	// When something goes wrong with streams you can get an error "EBADF, Bad file descriptor"
+	// with no strack trace to tell where the error happened.
+
+	// Also note that this code is not great because there's a source and a destination stream
+	// and while one stream might end, the other might throw an error or vice-versa. However
+	// we can only throw one error from a promise. So before one stream
+	// could end with resolve(), then another stream would get an error and call reject(), which
+	// would be ignored. I don't think it's happening anymore, but something to keep in mind
+	// anyway.
+
 	return new Promise(function(resolve, reject) {
 		// Note: we manually handle closing the file so that we can
 		// force flusing it before close. This is needed because
@@ -54,13 +65,17 @@ async function decodeBase64File(sourceFilePath, destFilePath) {
 		});
 		sourceStream.pipe(new Base64Decode()).pipe(destStream);
 
-		sourceStream.on('end', () => {
+		// We wait for the destination stream "finish" event, not the source stream "end" event
+		// because even if the source has finished sending data, the destination might not have
+		// finished receiving it and writing it to disk.
+		destStream.on('finish', () => {
 			fs.fdatasyncSync(destFile);
 			fs.closeSync(destFile);
 			resolve();
 		});
 
 		sourceStream.on('error', (error) => reject(error));
+		destStream.on('error', (error) => reject(error));
 	});
 }
 
@@ -459,13 +474,13 @@ function importEnex(parentFolderId, filePath, importOptions = null) {
 				note.latitude = noteAttributes.latitude;
 				note.longitude = noteAttributes.longitude;
 				note.altitude = noteAttributes.altitude;
-				note.author = noteAttributes.author;
+				note.author = noteAttributes.author ? noteAttributes.author.trim() : '';
 				note.is_todo = noteAttributes['reminder-order'] !== '0' && !!noteAttributes['reminder-order'];
 				note.todo_due = dateToTimestamp(noteAttributes['reminder-time'], true);
 				note.todo_completed = dateToTimestamp(noteAttributes['reminder-done-time'], true);
 				note.order = dateToTimestamp(noteAttributes['reminder-order'], true);
-				note.source = noteAttributes.source ? `evernote.${noteAttributes.source}` : 'evernote';
-				note.source_url = noteAttributes['source-url'] ? noteAttributes['source-url'] : '';
+				note.source = noteAttributes.source ? `evernote.${noteAttributes.source.trim()}` : 'evernote';
+				note.source_url = noteAttributes['source-url'] ? noteAttributes['source-url'].trim() : '';
 
 				noteAttributes = null;
 			} else if (n == 'resource') {
@@ -473,9 +488,9 @@ function importEnex(parentFolderId, filePath, importOptions = null) {
 					id: noteResource.id,
 					dataFilePath: noteResource.dataFilePath,
 					dataEncoding: noteResource.dataEncoding,
-					mime: noteResource.mime,
-					title: noteResource.filename ? noteResource.filename : '',
-					filename: noteResource.filename ? noteResource.filename : '',
+					mime: noteResource.mime ? noteResource.mime.trim() : '',
+					title: noteResource.filename ? noteResource.filename.trim() : '',
+					filename: noteResource.filename ? noteResource.filename.trim() : '',
 				});
 
 				noteResource = null;
@@ -484,10 +499,10 @@ function importEnex(parentFolderId, filePath, importOptions = null) {
 
 		saxStream.on('end', function() {
 			// Wait till there is no more notes to process.
-			const iid = setInterval(() => {
+			const iid = shim.setInterval(() => {
 				processNotes().then(allDone => {
 					if (allDone) {
-						clearTimeout(iid);
+						shim.clearTimeout(iid);
 						resolve();
 					}
 				});

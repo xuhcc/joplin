@@ -1,16 +1,16 @@
 import * as React from 'react';
 import { useState } from 'react';
 
-import KeymapService, { KeymapItem } from '../../lib/services/KeymapService';
+import KeymapService, { KeymapItem } from 'lib/services/KeymapService';
 import { ShortcutRecorder } from './ShortcutRecorder';
 import getLabel from './utils/getLabel';
 import useKeymap from './utils/useKeymap';
 import useCommandStatus from './utils/useCommandStatus';
 import styles_ from './styles';
+import { _ } from 'lib/locale';
 
-const { bridge } = require('electron').remote.require('./bridge');
-const { shim } = require('lib/shim');
-const { _ } = require('lib/locale');
+const bridge = require('electron').remote.require('./bridge').default;
+const shim = require('lib/shim').default;
 
 const keymapService = KeymapService.instance();
 
@@ -106,7 +106,7 @@ export const KeymapConfigScreen = ({ themeId }: KeymapConfigScreenProps) => {
 
 	const renderError = (error: Error) => {
 		return (
-			<div style={styles.warning}>
+			<div style={{ ...styles.warning, position: 'absolute', top: 0 }}>
 				<p style={styles.text}>
 					<span>
 						{error.message}

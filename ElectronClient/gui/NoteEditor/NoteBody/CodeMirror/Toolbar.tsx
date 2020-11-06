@@ -1,11 +1,16 @@
 import * as React from 'react';
 import CommandService from 'lib/services/CommandService';
 import ToolbarBase from '../../../ToolbarBase';
+import { utils as pluginUtils } from 'lib/services/plugins/reducer';
+import { connect } from 'react-redux';
+import { AppState } from '../../../../app';
+import ToolbarButtonUtils, { ToolbarButtonInfo } from 'lib/services/commands/ToolbarButtonUtils';
+import stateToWhenClauseContext from 'lib/services/commands/stateToWhenClauseContext';
 const { buildStyle } = require('lib/theme');
 
 interface ToolbarProps {
 	themeId: number,
-	dispatch: Function,
+	toolbarButtonInfos: ToolbarButtonInfo[],
 }
 
 function styles_(props:ToolbarProps) {
@@ -19,33 +24,40 @@ function styles_(props:ToolbarProps) {
 	});
 }
 
-export default function Toolbar(props:ToolbarProps) {
+const toolbarButtonUtils = new ToolbarButtonUtils(CommandService.instance());
+
+function Toolbar(props:ToolbarProps) {
 	const styles = styles_(props);
-
-	const cmdService = CommandService.instance();
-
-	const toolbarItems = [
-		cmdService.commandToToolbarButton('historyBackward'),
-		cmdService.commandToToolbarButton('historyForward'),
-		cmdService.commandToToolbarButton('startExternalEditing'),
-
-		{ type: 'separator' },
-		cmdService.commandToToolbarButton('textBold'),
-		cmdService.commandToToolbarButton('textItalic'),
-		{ type: 'separator' },
-		cmdService.commandToToolbarButton('textLink'),
-		cmdService.commandToToolbarButton('textCode'),
-		cmdService.commandToToolbarButton('attachFile'),
-		{ type: 'separator' },
-		cmdService.commandToToolbarButton('textNumberedList'),
-		cmdService.commandToToolbarButton('textBulletedList'),
-		cmdService.commandToToolbarButton('textCheckbox'),
-		cmdService.commandToToolbarButton('textHeading'),
-		cmdService.commandToToolbarButton('textHorizontalRule'),
-		cmdService.commandToToolbarButton('insertDateTime'),
-
-		cmdService.commandToToolbarButton('toggleEditors'),
-	];
-
-	return <ToolbarBase style={styles.root} items={toolbarItems} />;
+	return <ToolbarBase style={styles.root} items={props.toolbarButtonInfos} />;
 }
+
+const mapStateToProps = (state: AppState) => {
+	const whenClauseContext = stateToWhenClauseContext(state);
+
+	const commandNames = [
+		'historyBackward',
+		'historyForward',
+		'toggleExternalEditing',
+		'-',
+		'textBold',
+		'textItalic',
+		'-',
+		'textLink',
+		'textCode',
+		'attachFile',
+		'-',
+		'textBulletedList',
+		'textNumberedList',
+		'textCheckbox',
+		'textHeading',
+		'textHorizontalRule',
+		'insertDateTime',
+		'toggleEditors',
+	].concat(pluginUtils.commandNamesFromViews(state.pluginService.plugins, 'editorToolbar'));
+
+	return {
+		toolbarButtonInfos: toolbarButtonUtils.commandsToToolbarButtons(commandNames, whenClauseContext),
+	};
+};
+
+export default connect(mapStateToProps)(Toolbar);

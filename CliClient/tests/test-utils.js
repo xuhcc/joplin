@@ -3,7 +3,7 @@
 const fs = require('fs-extra');
 const { JoplinDatabase } = require('lib/joplin-database.js');
 const { DatabaseDriverNode } = require('lib/database-driver-node.js');
-const { BaseApplication } = require('lib/BaseApplication.js');
+const BaseApplication = require('lib/BaseApplication').default;
 const BaseModel = require('lib/BaseModel.js');
 const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
@@ -12,8 +12,8 @@ const Resource = require('lib/models/Resource.js');
 const Tag = require('lib/models/Tag.js');
 const NoteTag = require('lib/models/NoteTag.js');
 const Revision = require('lib/models/Revision.js');
-const { Logger } = require('lib/logger.js');
-const Setting = require('lib/models/Setting.js');
+const Logger = require('lib/Logger').default;
+const Setting = require('lib/models/Setting').default;
 const MasterKey = require('lib/models/MasterKey');
 const BaseItem = require('lib/models/BaseItem.js');
 const { FileApi } = require('lib/file-api.js');
@@ -23,12 +23,12 @@ const { FileApiDriverWebDav } = require('lib/file-api-driver-webdav.js');
 const { FileApiDriverDropbox } = require('lib/file-api-driver-dropbox.js');
 const { FileApiDriverOneDrive } = require('lib/file-api-driver-onedrive.js');
 const { FileApiDriverAmazonS3 } = require('lib/file-api-driver-amazon-s3.js');
-const BaseService = require('lib/services/BaseService.js');
-const { FsDriverNode } = require('lib/fs-driver-node.js');
+const BaseService = require('lib/services/BaseService').default;
+const FsDriverNode = require('lib/fs-driver-node').default;
 const { time } = require('lib/time-utils.js');
 const { shimInit } = require('lib/shim-init-node.js');
-const { shim } = require('lib/shim.js');
-const { uuid } = require('lib/uuid.js');
+const shim = require('lib/shim').default;
+const uuid = require('lib/uuid').default;
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetMemory = require('lib/SyncTargetMemory.js');
 const SyncTargetFilesystem = require('lib/SyncTargetFilesystem.js');
@@ -80,9 +80,9 @@ EncryptionService.fsDriver_ = fsDriver;
 FileApiDriverLocal.fsDriver_ = fsDriver;
 
 const logDir = `${__dirname}/../tests/logs`;
-const tempDir = `${__dirname}/../tests/tmp`;
+const baseTempDir = `${__dirname}/../tests/tmp`;
 fs.mkdirpSync(logDir, 0o755);
-fs.mkdirpSync(tempDir, 0o755);
+fs.mkdirpSync(baseTempDir, 0o755);
 fs.mkdirpSync(`${__dirname}/data`);
 
 SyncTargetRegistry.addClass(SyncTargetMemory);
@@ -146,7 +146,8 @@ BaseItem.loadClass('Revision', Revision);
 
 Setting.setConstant('appId', 'net.cozic.joplintest-cli');
 Setting.setConstant('appType', 'cli');
-Setting.setConstant('tempDir', tempDir);
+Setting.setConstant('tempDir', baseTempDir);
+Setting.setConstant('env', 'dev');
 
 BaseService.logger_ = logger;
 
@@ -162,7 +163,7 @@ function isNetworkSyncTarget() {
 
 function sleep(n) {
 	return new Promise((resolve, reject) => {
-		setTimeout(() => {
+		shim.setTimeout(() => {
 			resolve();
 		}, Math.round(n * 1000));
 	});
@@ -170,7 +171,7 @@ function sleep(n) {
 
 function msleep(ms) {
 	return new Promise((resolve, reject) => {
-		setTimeout(() => {
+		shim.setTimeout(() => {
 			resolve();
 		}, ms);
 	});
@@ -195,6 +196,7 @@ async function switchClient(id, options = null) {
 	Resource.encryptionService_ = encryptionServices_[id];
 	BaseItem.revisionService_ = revisionServices_[id];
 
+	await Setting.reset();
 	Setting.setConstant('resourceDirName', resourceDirName(id));
 	Setting.setConstant('resourceDir', resourceDir(id));
 
@@ -632,6 +634,22 @@ function tempFilePath(ext) {
 	return `${Setting.value('tempDir')}/${md5(Date.now() + Math.random())}.${ext}`;
 }
 
+async function createTempDir() {
+	const tempDirPath = `${baseTempDir}/${uuid.createNano()}`;
+	await fs.mkdirp(tempDirPath);
+	return tempDirPath;
+}
+
+function mockDate(year, month, day, tick) {
+	const fixedDate = new Date(2020, 0, 1);
+	jasmine.clock().install();
+	jasmine.clock().mockDate(fixedDate);
+}
+
+function restoreDate() {
+	jasmine.clock().uninstall();
+}
+
 // Application for feature integration testing
 class TestApp extends BaseApplication {
 	constructor(hasGui = true) {
@@ -677,7 +695,7 @@ class TestApp extends BaseApplication {
 
 	async wait() {
 		return new Promise((resolve) => {
-			const iid = setInterval(() => {
+			const iid = shim.setInterval(() => {
 				if (!this.middlewareCalls_.length) {
 					clearInterval(iid);
 					resolve();
@@ -700,4 +718,4 @@ class TestApp extends BaseApplication {
 	}
 }
 
-module.exports = { synchronizerStart, syncTargetName, setSyncTargetName, syncDir, isNetworkSyncTarget, kvStore, expectThrow, logger, expectNotThrow, resourceService, resourceFetcher, tempFilePath, allSyncTargetItemsEncrypted, msleep, setupDatabase, revisionService, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync, checkThrow, encryptionService, loadEncryptionMasterKey, fileContentEqual, decryptionWorker, asyncTest, currentClientId, id, ids, sortedIds, at, createNTestNotes, createNTestFolders, createNTestTags, TestApp };
+module.exports = { synchronizerStart, syncTargetName, setSyncTargetName, syncDir, createTempDir, isNetworkSyncTarget, kvStore, expectThrow, logger, expectNotThrow, resourceService, resourceFetcher, tempFilePath, allSyncTargetItemsEncrypted, msleep, setupDatabase, revisionService, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync, checkThrow, encryptionService, loadEncryptionMasterKey, fileContentEqual, decryptionWorker, asyncTest, currentClientId, id, ids, sortedIds, at, createNTestNotes, createNTestFolders, createNTestTags, mockDate, restoreDate, TestApp };

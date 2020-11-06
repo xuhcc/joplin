@@ -2,6 +2,8 @@
   "spec_dir": "tests-build",
   "spec_files": [
     "*.js",
+    "services/plugins/*.js",
+    "services/plugins/api/*.js",
     "!test-utils.js"
   ],
   "stopSpecOnExpectationFailure": false,

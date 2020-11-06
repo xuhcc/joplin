@@ -1,10 +1,10 @@
 'use strict';
 
 const { time } = require('lib/time-utils.js');
-const { Logger } = require('lib/logger.js');
+const Logger = require('lib/Logger').default;
 const Resource = require('lib/models/Resource.js');
-const { dirname } = require('lib/path-utils.js');
-const { FsDriverNode } = require('./fs-driver-node.js');
+const { dirname } = require('lib/path-utils');
+const FsDriverNode = require('lib/fs-driver-node').default;
 const lodash = require('lodash');
 const exec = require('child_process').exec;
 const fs = require('fs-extra');

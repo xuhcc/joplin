@@ -1,5 +1,5 @@
-import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandRuntime, CommandDeclaration } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'focusElementNoteTitle',
@@ -13,8 +13,6 @@ export const runtime = (comp:any):CommandRuntime => {
 			if (!comp.titleInputRef.current) return;
 			comp.titleInputRef.current.focus();
 		},
-		isEnabled: ():boolean => {
-			return !!comp.titleInputRef.current;
-		},
+		enabledCondition: 'oneNoteSelected',
 	};
 };

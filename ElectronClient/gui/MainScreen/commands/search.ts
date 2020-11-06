@@ -1,6 +1,6 @@
-import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
+import { CommandRuntime, CommandDeclaration, CommandContext } from 'lib/services/CommandService';
 const BaseModel = require('lib/BaseModel');
-const { uuid } = require('lib/uuid.js');
+const uuid = require('lib/uuid').default;
 
 export const declaration:CommandDeclaration = {
 	name: 'search',
@@ -9,7 +9,7 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = (comp:any):CommandRuntime => {
 	return {
-		execute: async ({ query }:any) => {
+		execute: async (_context:CommandContext, query:string) => {
 			if (!comp.searchId_) comp.searchId_ = uuid.create();
 
 			comp.props.dispatch({

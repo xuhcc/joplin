@@ -1,13 +1,13 @@
 import ResourceEditWatcher from '../../../lib/services/ResourceEditWatcher/index';
+import { _ } from 'lib/locale';
 
-const { bridge } = require('electron').remote.require('./bridge');
+const bridge = require('electron').remote.require('./bridge').default;
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const Resource = require('lib/models/Resource.js');
 const fs = require('fs-extra');
 const { clipboard } = require('electron');
 const { toSystemSlashes } = require('lib/path-utils');
-const { _ } = require('lib/locale');
 
 export enum ContextMenuItemType {
 	None = '',
@@ -41,6 +41,14 @@ async function resourceInfo(options:ContextMenuOptions):Promise<any> {
 	const resource = options.resourceId ? await Resource.load(options.resourceId) : null;
 	const resourcePath = resource ? Resource.fullPath(resource) : '';
 	return { resource, resourcePath };
+}
+
+function handleCopyToClipboard(options:ContextMenuOptions) {
+	if (options.textToCopy) {
+		clipboard.writeText(options.textToCopy);
+	} else if (options.htmlToCopy) {
+		clipboard.writeHTML(options.htmlToCopy);
+	}
 }
 
 export function menuItems():ContextMenuItems {
@@ -88,7 +96,7 @@ export function menuItems():ContextMenuItems {
 		cut: {
 			label: _('Cut'),
 			onAction: async (options:ContextMenuOptions) => {
-				clipboard.writeText(options.textToCopy);
+				handleCopyToClipboard(options);
 				options.insertContent('');
 			},
 			isActive: (_itemType:ContextMenuItemType, options:ContextMenuOptions) => !options.isReadOnly && (!!options.textToCopy || !!options.htmlToCopy),
@@ -96,11 +104,7 @@ export function menuItems():ContextMenuItems {
 		copy: {
 			label: _('Copy'),
 			onAction: async (options:ContextMenuOptions) => {
-				if (options.textToCopy) {
-					clipboard.writeText(options.textToCopy);
-				} else if (options.htmlToCopy) {
-					clipboard.writeHTML(options.htmlToCopy);
-				}
+				handleCopyToClipboard(options);
 			},
 			isActive: (_itemType:ContextMenuItemType, options:ContextMenuOptions) => !!options.textToCopy || !!options.htmlToCopy,
 		},
@@ -117,7 +121,7 @@ export function menuItems():ContextMenuItems {
 			onAction: async (options:ContextMenuOptions) => {
 				clipboard.writeText(options.linkToCopy !== null ? options.linkToCopy : options.textToCopy);
 			},
-			isActive: (itemType:ContextMenuItemType) => itemType === ContextMenuItemType.Link,
+			isActive: (itemType:ContextMenuItemType, options:ContextMenuOptions) => itemType === ContextMenuItemType.Link || !!options.linkToCopy,
 		},
 	};
 }

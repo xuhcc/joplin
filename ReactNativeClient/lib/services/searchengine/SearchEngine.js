@@ -1,6 +1,6 @@
-const { Logger } = require('lib/logger.js');
+const Logger = require('lib/Logger').default;
 const ItemChange = require('lib/models/ItemChange.js');
-const Setting = require('lib/models/Setting.js');
+const Setting = require('lib/models/Setting').default;
 const Note = require('lib/models/Note.js');
 const BaseModel = require('lib/BaseModel.js');
 const ItemChangeUtils = require('lib/services/ItemChangeUtils');
@@ -9,6 +9,7 @@ const removeDiacritics = require('diacritics').remove;
 const { sprintf } = require('sprintf-js');
 const filterParser = require('./filterParser').default;
 const queryBuilder = require('./queryBuilder').default;
+const shim = require('lib/shim').default;
 
 class SearchEngine {
 
@@ -95,7 +96,7 @@ class SearchEngine {
 	scheduleSyncTables() {
 		if (this.scheduleSyncTablesIID_) return;
 
-		this.scheduleSyncTablesIID_ = setTimeout(async () => {
+		this.scheduleSyncTablesIID_ = shim.setTimeout(async () => {
 			try {
 				await this.syncTables();
 			} catch (error) {
@@ -327,6 +328,21 @@ class SearchEngine {
 			return idf * (freq * (K1 + 1)) / (freq + K1 * (1 - B + B * (numTokens / avgTokens)));
 		};
 
+		const msSinceEpoch = Math.round(new Date().getTime());
+		const msPerDay = 86400000;
+		const weightForDaysSinceLastUpdate = (row) => {
+			// BM25 weights typically range 0-10, and last updated date should weight similarly, though prioritizing recency logarithmically.
+			// An alpha of 200 ensures matches in the last week will show up front (11.59) and often so for matches within 2 weeks (5.99),
+			// but is much less of a factor at 30 days (2.84) or very little after 90 days (0.95), focusing mostly on content at that point.
+			if (!row.user_updated_time) {
+				return 0;
+			}
+
+			const alpha = 200;
+			const daysSinceLastUpdate = (msSinceEpoch - row.user_updated_time) / msPerDay;
+			return alpha * Math.log(1 + 1 / Math.max(daysSinceLastUpdate, 0.5));
+		};
+
 		for (let i = 0; i < rows.length; i++) {
 			const row = rows[i];
 			row.weight = 0;
@@ -345,6 +361,8 @@ class SearchEngine {
 				});
 				row.wordFound.push(found);
 			}
+
+			row.weight += weightForDaysSinceLastUpdate(row);
 		}
 	}
 
@@ -559,6 +577,22 @@ class SearchEngine {
 			keys.push(col);
 		}
 
+		//
+		// The object "allTerms" is used for query construction purposes (this contains all the filter terms)
+		// Since this is used for the FTS match query, we need to normalize text, title and body terms.
+		// Note, we're not normalizing terms like tag because these are matched using SQL LIKE operator and so we must preserve their diacritics.
+		//
+		// The object "terms" only include text, title, body terms and is used for highlighting.
+		// By not normalizing the text, title, body in "terms", highlighting still works correctly for words with diacritics.
+		//
+
+		allTerms = allTerms.map(x => {
+			if (x.name === 'text' || x.name === 'title' || x.name === 'body') {
+				return Object.assign(x, { value: this.normalizeText_(x.value) });
+			}
+			return x;
+		});
+
 		return {
 			termCount: termCount,
 			keys: keys,
@@ -617,7 +651,15 @@ class SearchEngine {
 		// If preferredSearchType is "fts" we auto-detect anyway
 		// because it's not always supported.
 
-		const st = scriptType(query);
+		let allTerms = [];
+		try {
+			allTerms = filterParser(query);
+		} catch (error) {
+			console.warn(error);
+		}
+
+		const textQuery = allTerms.filter(x => x.name === 'text' || x.name == 'title' || x.name == 'body').map(x => x.value).join(' ');
+		const st = scriptType(textQuery);
 
 		if (!Setting.value('db.ftsEnabled') || ['ja', 'zh', 'ko', 'th'].indexOf(st) >= 0) {
 			return SearchEngine.SEARCH_TYPE_BASIC;
@@ -635,12 +677,11 @@ class SearchEngine {
 			fuzzy: Setting.value('db.fuzzySearchEnabled') === 1,
 		}, options);
 
-		searchString = this.normalizeText_(searchString);
-
 		const searchType = this.determineSearchType_(searchString, options);
 
 		if (searchType === SearchEngine.SEARCH_TYPE_BASIC) {
 			// Non-alphabetical languages aren't support by SQLite FTS (except with extensions which are not available in all platforms)
+			searchString = this.normalizeText_(searchString);
 			const rows = await this.basicSearch(searchString);
 			const parsedQuery = await this.parseQuery(searchString);
 			this.processResults_(rows, parsedQuery, true);
@@ -672,15 +713,15 @@ class SearchEngine {
 
 	async destroy() {
 		if (this.scheduleSyncTablesIID_) {
-			clearTimeout(this.scheduleSyncTablesIID_);
+			shim.clearTimeout(this.scheduleSyncTablesIID_);
 			this.scheduleSyncTablesIID_ = null;
 		}
 		SearchEngine.instance_ = null;
 
 		return new Promise((resolve) => {
-			const iid = setInterval(() => {
+			const iid = shim.setInterval(() => {
 				if (!this.syncCalls_.length) {
-					clearInterval(iid);
+					shim.clearInterval(iid);
 					this.instance_ = null;
 					resolve();
 				}

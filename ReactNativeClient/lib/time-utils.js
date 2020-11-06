@@ -1,4 +1,5 @@
 const moment = require('moment');
+const shim = require('lib/shim').default;
 
 class Time {
 	constructor() {
@@ -30,6 +31,14 @@ class Time {
 
 	setTimeFormat(v) {
 		this.timeFormat_ = v;
+	}
+
+	use24HourFormat() {
+		return this.timeFormat() ? this.timeFormat().includes('HH') : true;
+	}
+
+	formatDateToLocal(date, format = null) {
+		return this.formatMsToLocal(date.getTime(), format);
 	}
 
 	dateTimeFormat() {
@@ -102,7 +111,7 @@ class Time {
 
 	msleep(ms) {
 		return new Promise((resolve) => {
-			setTimeout(() => {
+			shim.setTimeout(() => {
 				resolve();
 			}, ms);
 		});

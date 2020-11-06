@@ -1,9 +1,8 @@
-import { utils, CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
-const Setting = require('lib/models/Setting');
+import { utils, CommandRuntime, CommandDeclaration, CommandContext } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
+const Setting = require('lib/models/Setting').default;
 const Note = require('lib/models/Note');
-const Folder = require('lib/models/Folder');
 const TemplateUtils = require('lib/TemplateUtils');
-const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
 	name: 'newNote',
@@ -13,7 +12,7 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async ({ template, isTodo }:any) => {
+		execute: async (_context:CommandContext, template:string = null, isTodo:boolean = false) => {
 			const folderId = Setting.value('activeFolderId');
 			if (!folderId) return;
 
@@ -34,12 +33,6 @@ export const runtime = ():CommandRuntime => {
 				id: newNote.id,
 			});
 		},
-		isEnabled: () => {
-			const { folders, selectedFolderId } = utils.store.getState();
-			return !!folders.length && selectedFolderId !== Folder.conflictFolderId();
-		},
-		title: () => {
-			return _('New note');
-		},
+		enabledCondition: 'oneFolderSelected && !inConflictFolder',
 	};
 };

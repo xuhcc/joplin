@@ -4,10 +4,10 @@
 require('app-module-path').addPath(__dirname);
 
 const electronApp = require('electron').app;
-const { ElectronAppWrapper } = require('./ElectronAppWrapper');
+const ElectronAppWrapper = require('./ElectronAppWrapper').default;
 const { initBridge } = require('./bridge');
-const { Logger } = require('lib/logger.js');
-const { FsDriverNode } = require('lib/fs-driver-node.js');
+const Logger = require('lib/Logger').default;
+const FsDriverNode = require('lib/fs-driver-node').default;
 const envFromArgs = require('lib/envFromArgs');
 
 process.on('unhandledRejection', (reason, p) => {

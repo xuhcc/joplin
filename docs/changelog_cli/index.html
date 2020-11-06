@@ -9,17 +9,17 @@ This file was auto-generated from readme/changelog_cli.md and any manual change
 made to it will be overwritten. To make a change to this file please modify
 the source Markdown file:
 
-https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
+https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md
 
 -->
 
 <head>
-	<title>Changelog (CLI App) | Joplin</title>
+	<title>Joplin terminal app changelog | Joplin</title>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="https://joplinapp.org/css/bootstrap.min.css">
-	<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+	<link rel="shortcut icon" type="image/x-icon" href="https://joplinapp.org/favicon.ico">
 	<!-- <link rel="stylesheet" href="https://joplinapp.org/css/fontawesome-all.min.css">  -->
 	<link rel="stylesheet" href="https://joplinapp.org/css/fork-awesome.min.css"> 
 	<script src="https://joplinapp.org/js/jquery-3.2.1.slim.min.js"></script>
@@ -28,6 +28,15 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		background-color: #F1F1F1;
 		color: #333333;
 	}
+
+	.root {
+		overflow: hidden;
+	}
+
+	a[href^="mailto:"] {
+		word-break: break-all;
+	}
+
 	table {
 		margin-bottom: 1em;
 	}
@@ -72,6 +81,7 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		background-color: #eee;
 		border: 1px solid #ccc;
 		font-size: .85em;
+		word-break: break-all;
 	}
 	pre code {
 		border: none;
@@ -184,8 +194,9 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 	}
 	.nav {
 		background-color: black;
-		display: table;
-		width: inherit;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
 	}
 	.nav.sticky {
 		position:fixed;
@@ -202,9 +213,8 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		padding-left: 2em;
 		margin-bottom: 0;
 		display: table-cell;
-		/* min-width: 250px; */
-		/* For GSoC: */
-		min-width: 470px;
+		display: flex;
+		width: 100%;
 	}
 	.nav ul li {
 		display: inline-block;
@@ -215,11 +225,11 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		font-weight: bold;
 	}
 	.nav-right {
-		display: table-cell;
-		width: 100%;
+		display: flex;
 		text-align: right;
 		vertical-align: middle;
 		line-height: 0;
+		margin-right: 10px;
 	}
 	.nav-right .share-btn {
 		display: none;
@@ -228,7 +238,7 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		display: none;
 	}
 	.footer {
-		padding-top: 1em;
+		padding: 2em;
 		border-top: 1px solid #d4d4d4;
 		margin-top: 2em;
 		color: gray;
@@ -254,6 +264,23 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 		opacity: 1;
 	}
 
+	@media (min-width: 992px) {
+		.content{
+			display: flex;
+		}
+
+		#toc{
+			display: block!important;
+			align-self: flex-start;
+			width: 300px;
+			position: sticky; top: 20px; left: 0;            
+		}
+
+		.main{
+			width: calc(100% - 300px);
+		}
+	}
+
 	.bottom-links {
 		display: flex;
 		justify-content: center;
@@ -275,7 +302,7 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 
 <body>
 
-<div class="container page-changelog_cli">
+<div class="container root page-changelog_cli">
 
 <div class="header">
 	<a class="forkme" href="https://github.com/laurent22/joplin"><img src="https://joplinapp.org/images/ForkMe.png"/></a>
@@ -320,22 +347,34 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 <li><a href="https://joplinapp.org/e2ee/">How to enable end-to-end encryption</a></li>
 <li><a href="https://joplinapp.org/conflict/">What is a conflict?</a></li>
 <li><a href="https://joplinapp.org/debugging/">How to enable debug mode</a></li>
-<li><a href="https://joplinapp.org/api/">API documentation</a></li>
 <li><a href="https://joplinapp.org/faq/">FAQ</a></li>
+</ul>
+</li>
+<li>
+<p>Joplin API</p>
+<ul>
+<li><a href="https://joplinapp.org/api/overview/">Joplin API Overview</a></li>
+<li><a href="https://joplinapp.org/api/get_started/plugins/">Plugin development</a></li>
+<li><a href="https://joplinapp.org/api/tutorials/toc_plugin/">Plugin tutorial</a></li>
+<li><a href="https://joplinapp.org/api/references/plugin_api/classes/joplin.html">Plugin API</a></li>
+<li><a href="https://joplinapp.org/api/references/rest_api/">Data API documentation</a></li>
 </ul>
 </li>
 <li>
 <p>Development</p>
 <ul>
-<li><a href="https://joplinapp.org/spec/">End-to-end encryption spec</a></li>
+<li><a href="https://github.com/laurent22/joplin/blob/dev/BUILD.md">How to build the apps</a></li>
+<li><a href="https://joplinapp.org/spec/e2ee/">End-to-end encryption spec</a></li>
 <li><a href="https://joplinapp.org/spec/history/">Note History spec</a></li>
 <li><a href="https://joplinapp.org/spec/sync_lock/">Sync Lock spec</a></li>
+<li><a href="https://joplinapp.org/spec/plugins/">Plugin Architecture spec</a></li>
+<li><a href="https://joplinapp.org/spec/search_sorting/">Search Sorting spec</a></li>
 </ul>
 </li>
 <li>
 <p>Google Summer of Code 2020</p>
 <ul>
-<li><a href="https://joplinapp.org/gsoc2020">Google Summer of Code 2020</a></li>
+<li><a href="https://joplinapp.org/gsoc2020/index/">Google Summer of Code 2020</a></li>
 <li><a href="https://joplinapp.org/gsoc2020/ideas/">Project Ideas</a></li>
 </ul>
 </li>
@@ -350,7 +389,41 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 </li>
 </ul>
 </div>
+
+	<div class="main">
 <h1>Joplin terminal app changelog<a name="joplin-terminal-app-changelog" href="#joplin-terminal-app-changelog" class="heading-anchor">🔗</a></h1>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.3.3">cli-v1.3.3</a> - 2020-10-23T16:00:38Z<a name="cli-v1-3-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-3-3-2020-10-23t16-00-38z" href="#cli-v1-3-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-3-3-2020-10-23t16-00-38z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Improved: Added support for a custom S3 URL (#3921) (#3691 by <a href="https://github.com/aaron">@aaron</a>)</li>
+<li>Improved: Allow setting note geolocation attributes via API (#3884)</li>
+<li>Improved: Import &lt;strike&gt;,&lt;s&gt; tags (strikethrough) from Evernote (#3936 by Ian Slinger)</li>
+<li>Improved: Removed OneDrive Dev sync target which was not really useful</li>
+<li>Improved: Sort search results by average of multiple criteria, including 'Sort notes by' field setting (#3777 by <a href="https://github.com/shawnaxsom">@shawnaxsom</a>)</li>
+<li>Improved: Sort tags in a case-insensitive way</li>
+<li>Improved: Updated installation script with BSD support (#3930 by Andros Fenollosa)</li>
+<li>Fixed: Crash when trying to change app locale (#3847)</li>
+<li>Fixed: Fix search filters when language is in Korean or with accents (#3947 by Naveen M V)</li>
+<li>Fixed: Fixed freeze when importing ENEX as HTML, and fixed potential error when importing resources (#3958)</li>
+<li>Fixed: Fixed setting issue that would cause a password to be saved in plain text in the database, even when the keychain is working</li>
+<li>Fixed: Importing ENEX as HTML was importing as Markdown (#3923)</li>
+<li>Fixed: Regression: Fix export of pluginAssets when exporting to html/pdf (#3927 by Caleb John)</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.2.3">cli-v1.2.3</a> - 2020-10-09T11:17:18Z<a name="cli-v1-2-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-3-2020-10-09t11-17-18z" href="#cli-v1-2-3-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-3-2020-10-09t11-17-18z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Improved: Improved handling of database migration failures</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.2.2">cli-v1.2.2</a> - 2020-09-29T11:33:53Z<a name="cli-v1-2-2-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-2-2020-09-29t11-33-53z" href="#cli-v1-2-2-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-2-2020-09-29t11-33-53z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Fixed: Fixed crash due to missing spellfix extension</li>
+<li>Fixed: Fixed link generation when exporting to PDF or HTML (#3780)</li>
+<li>Fixed: Improved handling of special characters when exporting to Markdown (#3760)</li>
+</ul>
+<h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.2.1">cli-v1.2.1</a> - 2020-09-23T11:15:12Z<a name="cli-v1-2-1-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-1-2020-09-23t11-15-12z" href="#cli-v1-2-1-https-github-com-laurent22-joplin-releases-tag-cli-v1-2-1-2020-09-23t11-15-12z" class="heading-anchor">🔗</a></h2>
+<ul>
+<li>Fixed: Fixed crash due to missing spellfix extension</li>
+<li>Fixed: Fixed link generation when exporting to PDF or HTML (#3780)</li>
+<li>Fixed: Improved handling of special characters when exporting to Markdown (#3760)</li>
+</ul>
 <h2><a href="https://github.com/laurent22/joplin/releases/tag/cli-v1.1.8">cli-v1.1.8</a> - 2020-09-21T12:02:29Z<a name="cli-v1-1-8-https-github-com-laurent22-joplin-releases-tag-cli-v1-1-8-2020-09-21t12-02-29z" href="#cli-v1-1-8-https-github-com-laurent22-joplin-releases-tag-cli-v1-1-8-2020-09-21t12-02-29z" class="heading-anchor">🔗</a></h2>
 <ul>
 <li>Improved: Do not prevent export when one item is still encrypted</li>
@@ -537,7 +610,7 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 </ul>
 
 		<div class="bottom-links">
-			<a href="https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md">
+			<a href="https://github.com/laurent22/joplin/blob/dev/readme/changelog_cli.md">
 				<i class="fa fa-github"></i> Improve this doc
 			</a>
 		</div>
@@ -571,8 +644,10 @@ https://github.com/laurent22/joplin/blob/master/readme/changelog_cli.md
 	ga('send', 'pageview');
 </script>
 
+</div></div>
+
 <div class="footer">
-Copyright (c) 2016-2020 Laurent Cozic
+Copyright (C) 2016-2020 Laurent Cozic
 </div>
 </body>
 </html>

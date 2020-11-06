@@ -2,7 +2,7 @@
   "name": "joplin-renderer",
   "version": "1.0.8",
   "description": "The Joplin note renderer, used the mobile and desktop application",
-  "repository": "https://github.com/laurent22/joplin/tree/master/ReactNativeClient/lib/joplin-renderer",
+  "repository": "https://github.com/laurent22/joplin/tree/dev/ReactNativeClient/lib/joplin-renderer",
   "main": "index.js",
   "scripts": {
     "test": "jasmine --config=tests/support/jasmine.json",
@@ -18,7 +18,7 @@
     "base-64": "^0.1.0",
     "font-awesome-filetypes": "^2.1.0",
     "fs-extra": "^8.1.0",
-    "highlight.js": "10.1.1",
+    "highlight.js": "^10.2.1",
     "html-entities": "^1.2.1",
     "json-stringify-safe": "^5.0.1",
     "katex": "^0.12.0",
@@ -36,8 +36,7 @@
     "markdown-it-sup": "^1.0.0",
     "markdown-it-toc-done-right": "^4.1.0",
     "md5": "^2.2.1",
-    "memory-cache": "^0.2.0",
-    "mermaid": "^8.8.0",
-    "slug": "^3.3.4"
+    "mermaid": "^8.8.1",
+    "uslug": "git+https://github.com/laurent22/uslug.git#emoji-support"
   }
 }

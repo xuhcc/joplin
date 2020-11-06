@@ -156,6 +156,14 @@ class FsDriverRN extends FsDriverBase {
 		handle.offset += length;
 		return output ? output : null;
 	}
+
+	resolve(path) {
+		throw new Error(`Not implemented: resolve(): ${path}`);
+	}
+
+	resolveRelativePathWithinDir(_baseDir, relativePath) {
+		throw new Error(`Not implemented: resolveRelativePathWithinDir(): ${relativePath}`);
+	}
 }
 
 module.exports.FsDriverRN = FsDriverRN;

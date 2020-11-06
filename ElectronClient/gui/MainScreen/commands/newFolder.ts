@@ -1,7 +1,7 @@
-import { CommandDeclaration, CommandRuntime } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandContext, CommandDeclaration, CommandRuntime } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
 const Folder = require('lib/models/Folder');
-const { bridge } = require('electron').remote.require('./bridge');
+const bridge = require('electron').remote.require('./bridge').default;
 
 export const declaration:CommandDeclaration = {
 	name: 'newFolder',
@@ -11,7 +11,7 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = (comp:any):CommandRuntime => {
 	return {
-		execute: async ({ parentId }:any) => {
+		execute: async (_context:CommandContext, parentId:string = null) => {
 			comp.setState({
 				promptOptions: {
 					label: _('Notebook title:'),
@@ -38,15 +38,6 @@ export const runtime = (comp:any):CommandRuntime => {
 					},
 				},
 			});
-		},
-		mapStateToProps: (state:any):any => {
-			return {
-				selectedNoteIds: state.selectedNoteIds,
-				notes: state.notes,
-			};
-		},
-		title: () => {
-			return _('New notebook');
 		},
 	};
 };

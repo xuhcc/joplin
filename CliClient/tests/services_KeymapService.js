@@ -1,7 +1,9 @@
 require('app-module-path').addPath(__dirname);
 
+const { tempFilePath } = require('test-utils.js');
 const KeymapService = require('lib/services/KeymapService').default;
 const keymapService = KeymapService.instance();
+keymapService.initialize([]);
 
 describe('services_KeymapService', () => {
 	describe('validateAccelerator', () => {
@@ -30,7 +32,7 @@ describe('services_KeymapService', () => {
 			};
 
 			Object.entries(testCases).forEach(([platform, accelerators]) => {
-				keymapService.initialize(platform);
+				keymapService.initialize([], platform);
 				accelerators.forEach(accelerator => {
 					expect(() => keymapService.validateAccelerator(accelerator)).not.toThrow();
 				});
@@ -68,7 +70,7 @@ describe('services_KeymapService', () => {
 			};
 
 			Object.entries(testCases).forEach(([platform, accelerators]) => {
-				keymapService.initialize(platform);
+				keymapService.initialize([], platform);
 				accelerators.forEach(accelerator => {
 					expect(() => keymapService.validateAccelerator(accelerator)).toThrow();
 				});
@@ -76,21 +78,46 @@ describe('services_KeymapService', () => {
 		});
 	});
 
+	describe('registerCommandAccelerator', () => {
+		beforeEach(() => keymapService.initialize());
+
+		it('should allow registering new commands', async () => {
+			keymapService.initialize([], 'linux');
+			keymapService.registerCommandAccelerator('myCustomCommand', 'Ctrl+Shift+Alt+B');
+			expect(keymapService.getAccelerator('myCustomCommand')).toEqual('Ctrl+Shift+Alt+B');
+
+			// Check that macOS key conversion is working
+			keymapService.initialize([], 'darwin');
+			keymapService.registerCommandAccelerator('myCustomCommand', 'CmdOrCtrl+Shift+Alt+B');
+			expect(keymapService.getAccelerator('myCustomCommand')).toEqual('Cmd+Shift+Option+B');
+			keymapService.setAccelerator('myCustomCommand', 'Cmd+Shift+Option+X');
+
+			// Check that the new custom shortcut is being saved and loaded
+			const keymapFilePath = tempFilePath('json');
+			await keymapService.saveCustomKeymap(keymapFilePath);
+
+			keymapService.initialize([], 'darwin');
+			await keymapService.loadCustomKeymap(keymapFilePath);
+
+			expect(keymapService.getAccelerator('myCustomCommand')).toEqual('Cmd+Shift+Option+X');
+		});
+	});
+
 	describe('getAccelerator', () => {
 		beforeEach(() => keymapService.initialize());
 
 		it('should return the platform-specific default Accelerator', () => {
-			keymapService.initialize('darwin');
+			keymapService.initialize([], 'darwin');
 			expect(keymapService.getAccelerator('newNote')).toEqual('Cmd+N');
 			expect(keymapService.getAccelerator('synchronize')).toEqual('Cmd+S');
 			expect(keymapService.getAccelerator('textSelectAll')).toEqual('Cmd+A');
 			expect(keymapService.getAccelerator('textBold')).toEqual('Cmd+B');
 
-			keymapService.initialize('linux');
+			keymapService.initialize([], 'linux');
 			expect(keymapService.getAccelerator('newNote')).toEqual('Ctrl+N');
 			expect(keymapService.getAccelerator('synchronize')).toEqual('Ctrl+S');
 
-			keymapService.initialize('win32');
+			keymapService.initialize([], 'win32');
 			expect(keymapService.getAccelerator('textSelectAll')).toEqual('Ctrl+A');
 			expect(keymapService.getAccelerator('textBold')).toEqual('Ctrl+B');
 		});
@@ -104,7 +131,7 @@ describe('services_KeymapService', () => {
 		beforeEach(() => keymapService.initialize());
 
 		it('should update the Accelerator', () => {
-			keymapService.initialize('darwin');
+			keymapService.initialize(['print'], 'darwin');
 			const testCases_Darwin = [
 				{ command: 'newNote', accelerator: 'Ctrl+Option+Shift+N' },
 				{ command: 'synchronize', accelerator: 'F11' },
@@ -121,7 +148,7 @@ describe('services_KeymapService', () => {
 				expect(keymapService.getAccelerator(command)).toEqual(accelerator);
 			});
 
-			keymapService.initialize('linux');
+			keymapService.initialize(['print'], 'linux');
 			const testCases_Linux = [
 				{ command: 'newNote', accelerator: 'Ctrl+Alt+Shift+N' },
 				{ command: 'synchronize', accelerator: 'F15' },
@@ -141,7 +168,7 @@ describe('services_KeymapService', () => {
 	});
 
 	describe('getDefaultAccelerator', () => {
-		beforeEach(() => keymapService.initialize());
+		beforeEach(() => keymapService.initialize(['print', 'linux']));
 
 		it('should return the default accelerator', () => {
 			const testCases = [
@@ -170,7 +197,7 @@ describe('services_KeymapService', () => {
 		beforeEach(() => keymapService.initialize());
 
 		it('should update the keymap', () => {
-			keymapService.initialize('darwin');
+			keymapService.initialize([], 'darwin');
 			const customKeymapItems_Darwin = [
 				{ command: 'newNote', accelerator: 'Option+Shift+Cmd+N' },
 				{ command: 'synchronize', accelerator: 'Ctrl+F11' },
@@ -191,7 +218,7 @@ describe('services_KeymapService', () => {
 				expect(keymapService.getAccelerator(command)).toEqual(accelerator);
 			});
 
-			keymapService.initialize('win32');
+			keymapService.initialize([], 'win32');
 			const customKeymapItems_Win32 = [
 				{ command: 'newNote', accelerator: 'Ctrl+Alt+Shift+N' },
 				{ command: 'synchronize', accelerator: 'Ctrl+F11' },
@@ -254,15 +281,15 @@ describe('services_KeymapService', () => {
 			expect(() => keymapService.overrideKeymap(customKeymapItems)).toThrow();
 		});
 
-		it('should throw when the provided commands are invalid', () => {
-			const customKeymapItems = [
-				{ command: 'totallyInvalidCommand', accelerator: 'Ctrl+Shift+G' },
-				{ command: 'print', accelerator: 'Alt+P' },
-				{ command: 'focusElementNoteTitle', accelerator: 'Ctrl+Alt+Shift+J' },
-			];
+		// it('should throw when the provided commands are invalid', () => {
+		// 	const customKeymapItems = [
+		// 		{ command: 'totallyInvalidCommand', accelerator: 'Ctrl+Shift+G' },
+		// 		{ command: 'print', accelerator: 'Alt+P' },
+		// 		{ command: 'focusElementNoteTitle', accelerator: 'Ctrl+Alt+Shift+J' },
+		// 	];
 
-			expect(() => keymapService.overrideKeymap(customKeymapItems)).toThrow();
-		});
+		// 	expect(() => keymapService.overrideKeymap(customKeymapItems)).toThrow();
+		// });
 
 		it('should throw when duplicate accelerators are provided', () => {
 			const customKeymaps_Darwin = [
@@ -273,7 +300,7 @@ describe('services_KeymapService', () => {
 				],
 				[
 					{ command: 'showLocalSearch', accelerator: 'Option+Cmd+S' },
-					{ command: 'print', accelerator: 'Cmd+G' /* Default of gotoAnything */ },
+					{ command: 'print', accelerator: 'Cmd+P' /* Default of gotoAnything */ },
 					{ command: 'focusElementNoteTitle', accelerator: 'Option+Shift+Cmd+J' },
 				],
 			];
@@ -291,7 +318,7 @@ describe('services_KeymapService', () => {
 				],
 				[
 					{ command: 'showLocalSearch', accelerator: 'Ctrl+Alt+S' },
-					{ command: 'print', accelerator: 'Ctrl+G' /* Default of gotoAnything */ },
+					{ command: 'print', accelerator: 'Ctrl+P' /* Default of gotoAnything */ },
 					{ command: 'focusElementNoteTitle', accelerator: 'Ctrl+Alt+Shift+J' },
 				],
 			];

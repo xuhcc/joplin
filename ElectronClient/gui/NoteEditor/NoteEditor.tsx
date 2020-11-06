@@ -13,35 +13,43 @@ import useMessageHandler from './utils/useMessageHandler';
 import useWindowCommandHandler from './utils/useWindowCommandHandler';
 import useDropHandler from './utils/useDropHandler';
 import useMarkupToHtml from './utils/useMarkupToHtml';
-import useNoteToolbarButtons from './utils/useNoteToolbarButtons';
 import useFormNote, { OnLoadEvent } from './utils/useFormNote';
 import useFolder from './utils/useFolder';
 import styles_ from './styles';
 import { NoteEditorProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent, NoteBodyEditorProps } from './utils/types';
-import ResourceEditWatcher from '../../lib/services/ResourceEditWatcher/index';
+import ResourceEditWatcher from 'lib/services/ResourceEditWatcher/index';
 import CommandService from 'lib/services/CommandService';
 import ToolbarButton from '../ToolbarButton/ToolbarButton';
 import Button, { ButtonLevel } from '../Button/Button';
+import eventManager from 'lib/eventManager';
+import { AppState } from '../../app';
+import ToolbarButtonUtils from 'lib/services/commands/ToolbarButtonUtils';
+import { _ } from 'lib/locale';
+import stateToWhenClauseContext from 'lib/services/commands/stateToWhenClauseContext';
+import TagList from '../TagList';
 
 const { themeStyle } = require('lib/theme');
 const { substrWithEllipsis } = require('lib/string-utils');
 const NoteSearchBar = require('../NoteSearchBar.min.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
-const markupLanguageUtils = require('lib/markupLanguageUtils');
+const markupLanguageUtils = require('lib/markupLanguageUtils').default;
 const usePrevious = require('lib/hooks/usePrevious').default;
-const Setting = require('lib/models/Setting');
-const { _ } = require('lib/locale');
+const Setting = require('lib/models/Setting').default;
 const Note = require('lib/models/Note.js');
-const { bridge } = require('electron').remote.require('./bridge');
+const bridge = require('electron').remote.require('./bridge').default;
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
-const eventManager = require('lib/eventManager');
 const NoteRevisionViewer = require('../NoteRevisionViewer.min');
-const TagList = require('../TagList.min.js');
 
 const commands = [
 	require('./commands/showRevisions'),
 ];
+
+const toolbarStyle = {
+	marginBottom: 0,
+};
+
+const toolbarButtonUtils = new ToolbarButtonUtils(CommandService.instance());
 
 function NoteEditor(props: NoteEditorProps) {
 	const [showRevisions, setShowRevisions] = useState(false);
@@ -116,6 +124,8 @@ function NoteEditor(props: NoteEditorProps) {
 					type: 'EDITOR_NOTE_STATUS_REMOVE',
 					id: formNote.id,
 				});
+
+				eventManager.emit('noteContentChange', { note: savedNote });
 			};
 		};
 
@@ -140,7 +150,11 @@ function NoteEditor(props: NoteEditorProps) {
 		return formNote.saveActionQueue.waitForAllDone();
 	}
 
-	const markupToHtml = useMarkupToHtml({ themeId: props.themeId, customCss: props.customCss });
+	const markupToHtml = useMarkupToHtml({
+		themeId: props.themeId,
+		customCss: props.customCss,
+		plugins: props.plugins,
+	});
 
 	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
 		const theme = themeStyle(props.themeId);
@@ -240,9 +254,9 @@ function NoteEditor(props: NoteEditorProps) {
 			event.preventDefault();
 
 			if (event.shiftKey) {
-				CommandService.instance().execute('focusElement', { target: 'noteList' });
+				CommandService.instance().execute('focusElement', 'noteList');
 			} else {
-				CommandService.instance().execute('focusElement', { target: 'noteBody' });
+				CommandService.instance().execute('focusElement', 'noteBody');
 			}
 		}
 	}, [props.dispatch]);
@@ -350,10 +364,6 @@ function NoteEditor(props: NoteEditorProps) {
 	}
 
 	function renderNoteToolbar() {
-		const toolbarStyle = {
-			marginBottom: 0,
-		};
-
 		return <NoteToolbar
 			themeId={props.themeId}
 			note={formNote}
@@ -363,17 +373,16 @@ function NoteEditor(props: NoteEditorProps) {
 	}
 
 	function renderTagButton() {
-		const info = CommandService.instance().commandToToolbarButton('setTags');
 		return <ToolbarButton
 			themeId={props.themeId}
-			toolbarButtonInfo={info}
+			toolbarButtonInfo={props.setTagsToolbarButtonInfo}
 		/>;
 	}
 
 	function renderTagBar() {
 		const theme = themeStyle(props.themeId);
 		const noteIds = [formNote.id];
-		const instructions = <span onClick={() => { CommandService.instance().execute('setTags', { noteIds }); }} style={{ ...theme.clickableTextStyle, whiteSpace: 'nowrap' }}>Click to add tags...</span>;
+		const instructions = <span onClick={() => { CommandService.instance().execute('setTags', noteIds); }} style={{ ...theme.clickableTextStyle, whiteSpace: 'nowrap' }}>Click to add tags...</span>;
 		const tagList = props.selectedNoteTags.length ? <TagList items={props.selectedNoteTags} /> : null;
 
 		return (
@@ -420,7 +429,7 @@ function NoteEditor(props: NoteEditorProps) {
 		disabled: false,
 		themeId: props.themeId,
 		dispatch: props.dispatch,
-		noteToolbar: null,// renderNoteToolbar(),
+		noteToolbar: null,
 		onScroll: onScroll,
 		setLocalSearchResultCount: setLocalSearchResultCount,
 		searchMarkers: searchMarkers,
@@ -428,7 +437,8 @@ function NoteEditor(props: NoteEditorProps) {
 		keyboardMode: Setting.value('editor.keyboardMode'),
 		locale: Setting.value('locale'),
 		onDrop: onDrop,
-		noteToolbarButtonInfos: useNoteToolbarButtons(),
+		noteToolbarButtonInfos: props.toolbarButtonInfos,
+		plugins: props.plugins,
 	};
 
 	let editor = null;
@@ -443,7 +453,7 @@ function NoteEditor(props: NoteEditorProps) {
 
 	const wysiwygBanner = props.bodyEditor !== 'TinyMCE' ? null : (
 		<div style={{ ...styles.warningBanner }}>
-			This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information. TO SWITCH TO THE MARKDOWN EDITOR PLEASE PRESS "Code View".
+			This is an experimental Rich Text editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information. To switch to the Markdown Editor please press the "Toggle editors" in the top right-hand corner.
 		</div>
 	);
 
@@ -476,6 +486,7 @@ function NoteEditor(props: NoteEditorProps) {
 			notes={props.notes}
 			dispatch={props.dispatch}
 			watchedNoteFiles={props.watchedNoteFiles}
+			plugins={props.plugins}
 		/>;
 	}
 
@@ -570,8 +581,9 @@ export {
 	NoteEditor as NoteEditorComponent,
 };
 
-const mapStateToProps = (state: any) => {
+const mapStateToProps = (state: AppState) => {
 	const noteId = state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null;
+	const whenClauseContext = stateToWhenClauseContext(state);
 
 	return {
 		noteId: noteId,
@@ -594,6 +606,16 @@ const mapStateToProps = (state: any) => {
 		noteAutoSave: state.settings['notes.autoSave'],
 		watchedResources: state.watchedResources,
 		highlightedWords: state.highlightedWords,
+		plugins: state.pluginService.plugins,
+		toolbarButtonInfos: toolbarButtonUtils.commandsToToolbarButtons([
+			'historyBackward',
+			'historyForward',
+			'toggleEditors',
+			'toggleExternalEditing',
+		], whenClauseContext),
+		setTagsToolbarButtonInfo: toolbarButtonUtils.commandsToToolbarButtons([
+			'setTags',
+		], whenClauseContext)[0],
 	};
 };
 

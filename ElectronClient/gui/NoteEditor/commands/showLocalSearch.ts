@@ -1,5 +1,5 @@
-import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandRuntime, CommandDeclaration } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'showLocalSearch',
@@ -16,11 +16,6 @@ export const runtime = (comp:any):CommandRuntime => {
 				if (comp.noteSearchBarRef.current) comp.noteSearchBarRef.current.wrappedInstance.focus();
 			}
 		},
-		isEnabled: (props:any) => {
-			return !!props.noteId;
-		},
-		mapStateToProps: (state:any) => {
-			return { noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null };
-		},
+		enabledCondition: 'oneNoteSelected',
 	};
 };

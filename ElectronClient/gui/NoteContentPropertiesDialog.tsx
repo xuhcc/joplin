@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-const { _ } = require('lib/locale.js');
+import { _ } from 'lib/locale';
 const { themeStyle } = require('lib/theme');
 const DialogButtonRow = require('./DialogButtonRow.min');
 const Countable = require('countable');
-const markupLanguageUtils = require('lib/markupLanguageUtils');
+const markupLanguageUtils = require('lib/markupLanguageUtils').default;
 
 interface NoteContentPropertiesDialogProps {
 	themeId: number,
@@ -46,8 +46,6 @@ function formatReadTime(readTimeMinutes: number) {
 }
 
 export default function NoteContentPropertiesDialog(props:NoteContentPropertiesDialogProps) {
-
-	console.info('MMMMMMMMMMMM', props.markupLanguage);
 	const theme = themeStyle(props.themeId);
 	const tableBodyComps: JSX.Element[] = [];
 	// For the source Markdown

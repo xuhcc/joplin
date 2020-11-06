@@ -1,8 +1,8 @@
 const BaseSyncTarget = require('lib/BaseSyncTarget.js');
-const { _ } = require('lib/locale.js');
-const Setting = require('lib/models/Setting.js');
+const { _ } = require('lib/locale');
+const Setting = require('lib/models/Setting').default;
 const { FileApi } = require('lib/file-api.js');
-const { Synchronizer } = require('lib/synchronizer.js');
+const Synchronizer = require('lib/Synchronizer').default;
 const { FileApiDriverAmazonS3 } = require('lib/file-api-driver-amazon-s3.js');
 const S3 = require('aws-sdk/clients/s3');
 
@@ -41,6 +41,8 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			accessKeyId: Setting.value('sync.8.username'),
 			secretAccessKey: Setting.value('sync.8.password'),
 			s3UseArnRegion: true, // override the request region with the region inferred from requested resource's ARN
+			s3ForcePathStyle: true,
+			endpoint: Setting.value('sync.8.url'),
 		};
 	}
 
@@ -56,6 +58,8 @@ class SyncTargetAmazonS3 extends BaseSyncTarget {
 			accessKeyId: options.username(),
 			secretAccessKey: options.password(),
 			s3UseArnRegion: true,
+			s3ForcePathStyle: true,
+			endpoint: options.url(),
 		};
 
 		const api = new S3(apiOptions);

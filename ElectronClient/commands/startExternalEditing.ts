@@ -1,12 +1,9 @@
-import { CommandRuntime, CommandDeclaration } from '../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandRuntime, CommandDeclaration, CommandContext } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
+import { stateUtils } from 'lib/reducer';
 const Note = require('lib/models/Note');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
-const { bridge } = require('electron').remote.require('./bridge');
-
-interface Props {
-	noteId: string
-}
+const bridge = require('electron').remote.require('./bridge').default;
 
 export const declaration:CommandDeclaration = {
 	name: 'startExternalEditing',
@@ -16,25 +13,16 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async (props:Props) => {
+		execute: async (context:CommandContext, noteId:string = null) => {
+			noteId = noteId || stateUtils.selectedNoteId(context.state);
+
 			try {
-				const note = await Note.load(props.noteId);
+				const note = await Note.load(noteId);
 				ExternalEditWatcher.instance().openAndWatch(note);
 			} catch (error) {
 				bridge().showErrorMessageBox(_('Error opening note in editor: %s', error.message));
 			}
-
-			// await comp.saveNoteAndWait(comp.formNote);
 		},
-		isEnabled: (props:any) => {
-			if (props.routeName !== 'Main') return false;
-			return !!props.noteId;
-		},
-		mapStateToProps: (state:any) => {
-			return {
-				noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
-				routeName: state.route.routeName,
-			};
-		},
+		enabledCondition: 'oneNoteSelected',
 	};
 };

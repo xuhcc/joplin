@@ -1,30 +1,19 @@
 import { utils, CommandRuntime, CommandDeclaration } from '../services/CommandService';
-const { _ } = require('lib/locale');
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'historyBackward',
 	label: () => _('Back'),
-	// iconName: 'fa-arrow-left',
 	iconName: 'icon-back',
 };
 
-interface Props {
-	backwardHistoryNotes: any[],
-}
-
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async (props:Props) => {
-			if (!props.backwardHistoryNotes.length) return;
+		execute: async () => {
 			utils.store.dispatch({
 				type: 'HISTORY_BACKWARD',
 			});
 		},
-		isEnabled: (props:Props) => {
-			return props.backwardHistoryNotes.length > 0;
-		},
-		mapStateToProps: (state:any) => {
-			return { backwardHistoryNotes: state.backwardHistoryNotes };
-		},
+		enabledCondition: 'historyhasBackwardNotes',
 	};
 };

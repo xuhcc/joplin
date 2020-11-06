@@ -1,4 +1,4 @@
-const { isListItem, isEmptyListItem, extractListToken, olLineNumber } = require('lib/markdownUtils');
+const { isListItem, isEmptyListItem, extractListToken, olLineNumber } = require('lib/markdownUtils').default;
 
 // Markdown list indentation.
 // If the current line starts with `markup.list` token,
@@ -141,7 +141,7 @@ export default function useListIdent(CodeMirror: any) {
 		cm.setCursor({ line: anchor.line, ch: line.length });
 
 		cm.execCommand('insertListElement');
-		cm.setOption('disableInput', true);
+		CodeMirror.Vim.handleKey(cm, 'i', 'macro');
 	};
 
 	CodeMirror.commands.insertListElement = function(cm: any) {

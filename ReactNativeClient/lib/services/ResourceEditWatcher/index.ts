@@ -1,12 +1,12 @@
 import AsyncActionQueue from '../../AsyncActionQueue';
-const { Logger } = require('lib/logger.js');
-const Setting = require('lib/models/Setting');
+import shim from 'lib/shim';
+import { _ } from 'lib/locale';
+const Logger = require('lib/Logger').default;
+const Setting = require('lib/models/Setting').default;
 const Resource = require('lib/models/Resource');
-const { shim } = require('lib/shim');
 const EventEmitter = require('events');
 const chokidar = require('chokidar');
-const { bridge } = require('electron').remote.require('./bridge');
-const { _ } = require('lib/locale');
+const bridge = require('electron').remote.require('./bridge').default;
 
 interface WatchedItem {
 	resourceId: string,
@@ -14,6 +14,7 @@ interface WatchedItem {
 	lastResourceUpdatedTime: number,
 	path:string,
 	asyncSaveQueue: AsyncActionQueue,
+	size: number,
 }
 
 interface WatchedItems {
@@ -72,6 +73,20 @@ export default class ResourceEditWatcher {
 		return this.eventEmitter_.removeListener(eventName, callback);
 	}
 
+	externalApi() {
+		return {
+			openAndWatch: async ({ resourceId }:any) => {
+				return this.openAndWatch(resourceId);
+			},
+			stopWatching: async ({ resourceId }:any) => {
+				return this.stopWatching(resourceId);
+			},
+			isWatched: async ({ resourceId }:any) => {
+				return !!this.watchedItemByResourceId(resourceId);
+			},
+		};
+	}
+
 	private watch(fileToWatch:string) {
 		if (!this.chokidar_) return;
 
@@ -111,7 +126,12 @@ export default class ResourceEditWatcher {
 			const stat = await shim.fsDriver().stat(path);
 			const editedFileUpdatedTime = stat.mtime.getTime();
 
-			if (watchedItem.lastFileUpdatedTime === editedFileUpdatedTime) {
+			// To check if the item has really changed we look at the updated time and size, which
+			// in most cases is sufficient. It could be a problem if the editing tool is making a change
+			// that neither changes the timestamp nor the file size. The alternative would be to compare
+			// the files byte for byte but that could be slow and the file might have changed again by
+			// the time we finished comparing.
+			if (watchedItem.lastFileUpdatedTime === editedFileUpdatedTime && watchedItem.size === stat.size) {
 				// chokidar is buggy and emits "change" events even when nothing has changed
 				// so double-check the modified time and skip processing if there's no change.
 				// In particular it emits two such events just after the file has been copied
@@ -121,13 +141,14 @@ export default class ResourceEditWatcher {
 				// handle and once in the "raw" event handler, due to a bug in chokidar. So having
 				// this check means we don't unecessarily save the resource twice when the file is
 				// modified by the user.
-				this.logger().debug(`ResourceEditWatcher: No timestamp change - skip: ${resourceId}`);
+				this.logger().debug(`ResourceEditWatcher: No timestamp and file size change - skip: ${resourceId}`);
 				return;
 			}
 
 			this.logger().debug(`ResourceEditWatcher: Queuing save action: ${resourceId}`);
 			watchedItem.asyncSaveQueue.push(makeSaveAction(resourceId, path));
 			watchedItem.lastFileUpdatedTime = editedFileUpdatedTime;
+			watchedItem.size = stat.size;
 		};
 
 		if (!this.watcher_) {
@@ -185,6 +206,7 @@ export default class ResourceEditWatcher {
 				lastResourceUpdatedTime: 0,
 				asyncSaveQueue: new AsyncActionQueue(1000),
 				path: '',
+				size: -1,
 			};
 
 			this.watchedItems_[resourceId] = watchedItem;
@@ -200,6 +222,7 @@ export default class ResourceEditWatcher {
 			watchedItem.path = editFilePath;
 			watchedItem.lastFileUpdatedTime = stat.mtime.getTime();
 			watchedItem.lastResourceUpdatedTime = resource.updated_time;
+			watchedItem.size = stat.size;
 
 			this.watch(editFilePath);
 

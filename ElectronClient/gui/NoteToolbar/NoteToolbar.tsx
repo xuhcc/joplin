@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { useEffect, useCallback, useState } from 'react';
-import CommandService from '../../lib/services/CommandService';
+import CommandService from 'lib/services/CommandService';
 import ToolbarBase from '../ToolbarBase';
+import { utils as pluginUtils } from 'lib/services/plugins/reducer';
+import ToolbarButtonUtils, { ToolbarButtonInfo } from 'lib/services/commands/ToolbarButtonUtils';
+import stateToWhenClauseContext from 'lib/services/commands/stateToWhenClauseContext';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
-// const Folder = require('lib/models/Folder');
-// const { _ } = require('lib/locale');
-// const { substrWithEllipsis } = require('lib/string-utils');
 
 interface ButtonClickEvent {
 	name: string,
@@ -15,15 +15,10 @@ interface ButtonClickEvent {
 interface NoteToolbarProps {
 	themeId: number,
 	style: any,
-	folders: any[],
-	watchedNoteFiles: string[],
-	backwardHistoryNotes: any[],
-	forwardHistoryNotes: any[],
-	notesParentType: string,
 	note: any,
-	dispatch: Function,
 	onButtonClick(event:ButtonClickEvent):void,
 	noteAutoSave: boolean,
+	toolbarButtonInfos: ToolbarButtonInfo[],
 }
 
 function styles_(props:NoteToolbarProps) {
@@ -42,50 +37,44 @@ function NoteToolbar(props:NoteToolbarProps) {
 	const styles = styles_(props);
 	const [toolbarItems, setToolbarItems] = useState([]);
 
-	const cmdService = CommandService.instance();
-
 	const updateToolbarItems = useCallback(() => {
-		const output = [];
+		const items = [...props.toolbarButtonInfos];
 
 		if (props.noteAutoSave === false && props.note.hasChanged) {
-			output.push({
+			items.push({
 				name: 'save',
 				tooltip: 'Save',
-				//iconName: 'icon-save',
+				iconName: 'icon-save',
 				// Use title because floppy disk icon is not available
 				title: 'save',
+				enabled: true,
 				onClick: () => {
 					props.onButtonClick({ name: 'saveNote' });
 				},
 			});
 		}
-
-		output.push(cmdService.commandToToolbarButton('editAlarm'));
-		output.push(cmdService.commandToToolbarButton('toggleVisiblePanes'));
-		output.push(cmdService.commandToToolbarButton('showNoteProperties'));
-
-		setToolbarItems(output);
+		setToolbarItems(items);
 	}, [props.note.id, props.note.body, props.note.hasChanged]);
 
 	useEffect(() => {
 		updateToolbarItems();
-		cmdService.on('commandsEnabledStateChange', updateToolbarItems);
-		return () => {
-			cmdService.off('commandsEnabledStateChange', updateToolbarItems);
-		};
 	}, [updateToolbarItems]);
 
 	return <ToolbarBase style={styles.root} items={toolbarItems} />;
 }
 
+const toolbarButtonUtils = new ToolbarButtonUtils(CommandService.instance());
+
 const mapStateToProps = (state:any) => {
+	const whenClauseContext = stateToWhenClauseContext(state);
+
 	return {
-		folders: state.folders,
-		watchedNoteFiles: state.watchedNoteFiles,
-		backwardHistoryNotes: state.backwardHistoryNotes,
-		forwardHistoryNotes: state.forwardHistoryNotes,
-		notesParentType: state.notesParentType,
 		noteAutoSave: state.settings['notes.autoSave'],
+		toolbarButtonInfos: toolbarButtonUtils.commandsToToolbarButtons([
+			'editAlarm',
+			'toggleVisiblePanes',
+			'showNoteProperties',
+		].concat(pluginUtils.commandNamesFromViews(state.pluginService.plugins, 'noteToolbar')), whenClauseContext),
 	};
 };
 

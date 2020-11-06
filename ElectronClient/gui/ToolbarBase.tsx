@@ -1,9 +1,9 @@
+import ToolbarButton from './ToolbarButton/ToolbarButton';
+import ToggleEditorsButton, { Value } from './ToggleEditorsButton/ToggleEditorsButton';
 const React = require('react');
 const { connect } = require('react-redux');
 const { themeStyle } = require('lib/theme');
-const ToolbarButton = require('./ToolbarButton/ToolbarButton.js').default;
 const ToolbarSpace = require('./ToolbarSpace.min.js');
-const ToggleEditorsButton = require('./ToggleEditorsButton/ToggleEditorsButton.js').default;
 
 interface Props {
 	themeId: number,
@@ -55,12 +55,12 @@ class ToolbarBaseComponent extends React.Component<Props, any> {
 				if (o.name === 'toggleEditors') {
 					rightItemComps.push(<ToggleEditorsButton
 						key={o.name}
-						value={'markdown'}
+						value={Value.Markdown}
 						themeId={this.props.themeId}
 						toolbarButtonInfo={o}
 					/>);
 				} else if (itemType === 'button') {
-					const target = ['historyForward', 'historyBackward', 'startExternalEditing'].includes(o.name) ? leftItemComps : centerItemComps;
+					const target = ['historyForward', 'historyBackward', 'toggleExternalEditing'].includes(o.name) ? leftItemComps : centerItemComps;
 					target.push(<ToolbarButton {...props} />);
 				} else if (itemType === 'separator') {
 					centerItemComps.push(<ToolbarSpace {...props} />);

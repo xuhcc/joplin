@@ -3,8 +3,9 @@ const BaseModel = require('lib/BaseModel');
 const MasterKey = require('lib/models/MasterKey');
 const Resource = require('lib/models/Resource');
 const ResourceService = require('lib/services/ResourceService');
-const { Logger } = require('lib/logger.js');
+const Logger = require('lib/Logger').default;
 const EventEmitter = require('events');
+const shim = require('lib/shim').default;
 
 class DecryptionWorker {
 	constructor() {
@@ -64,7 +65,7 @@ class DecryptionWorker {
 	async scheduleStart() {
 		if (this.scheduleId_) return;
 
-		this.scheduleId_ = setTimeout(() => {
+		this.scheduleId_ = shim.setTimeout(() => {
 			this.scheduleId_ = null;
 			this.start({
 				masterKeyNotLoadedHandler: 'dispatch',
@@ -105,8 +106,9 @@ class DecryptionWorker {
 		if (!('errorHandler' in options)) options.errorHandler = 'log';
 
 		if (this.state_ !== 'idle') {
-			this.logger().debug(`DecryptionWorker: cannot start because state is "${this.state_}"`);
-			return;
+			const msg = `DecryptionWorker: cannot start because state is "${this.state_}"`;
+			this.logger().debug(msg);
+			return { error: new Error(msg) };
 		}
 
 		// Note: the logic below is an optimisation to avoid going through the loop if no master key exists
@@ -114,7 +116,8 @@ class DecryptionWorker {
 		// "throw" and "dispatch" logic.
 		const loadedMasterKeyCount = await this.encryptionService().loadedMasterKeysCount();
 		if (!loadedMasterKeyCount) {
-			this.logger().info('DecryptionWorker: cannot start because no master key is currently loaded.');
+			const msg = 'DecryptionWorker: cannot start because no master key is currently loaded.';
+			this.logger().info(msg);
 			const ids = await MasterKey.allIds();
 
 			if (ids.length) {
@@ -129,7 +132,7 @@ class DecryptionWorker {
 					});
 				}
 			}
-			return;
+			return { error: new Error(msg) };
 		}
 
 		this.logger().info('DecryptionWorker: starting decryption...');
@@ -280,16 +283,16 @@ class DecryptionWorker {
 	async destroy() {
 		this.eventEmitter_.removeAllListeners();
 		if (this.scheduleId_) {
-			clearTimeout(this.scheduleId_);
+			shim.clearTimeout(this.scheduleId_);
 			this.scheduleId_ = null;
 		}
 		this.eventEmitter_ = null;
 		DecryptionWorker.instance_ = null;
 
 		return new Promise((resolve) => {
-			const iid = setInterval(() => {
+			const iid = shim.setInterval(() => {
 				if (!this.startCalls_.length) {
-					clearInterval(iid);
+					shim.clearInterval(iid);
 					resolve();
 				}
 			}, 100);

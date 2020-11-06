@@ -11,18 +11,18 @@ import styles_ from './styles';
 import { RenderedBody, defaultRenderedBody } from './utils/types';
 import NoteTextViewer  from '../../../NoteTextViewer';
 import Editor from './Editor';
+import usePluginServiceRegistration from '../../utils/usePluginServiceRegistration';
+import Setting from 'lib/models/Setting';
+import { _ } from 'lib/locale';
+import bridge from '../../../../services/bridge';
+import markdownUtils from 'lib/markdownUtils';
+import shim from 'lib/shim';
 
-//  @ts-ignore
-const { bridge } = require('electron').remote.require('./bridge');
-//  @ts-ignore
 const Note = require('lib/models/Note.js');
 const { clipboard } = require('electron');
-const Setting = require('lib/models/Setting.js');
 const shared = require('lib/components/shared/note-screen-shared.js');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
-const markdownUtils = require('lib/markdownUtils');
-const { _ } = require('lib/locale');
 const { reg } = require('lib/registry.js');
 const dialogs = require('../../../dialogs');
 const { themeStyle } = require('lib/theme');
@@ -35,22 +35,23 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	const styles = styles_(props);
 
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody()); // Viewer content
+	const [renderedBodyContentKey, setRenderedBodyContentKey] = useState<string>(null);
+
 	const [webviewReady, setWebviewReady] = useState(false);
 
 	const previousContent = usePrevious(props.content);
 	const previousRenderedBody = usePrevious(renderedBody);
 	const previousSearchMarkers = usePrevious(props.searchMarkers);
-	const previousContentKey = usePrevious(props.contentKey);
 
 	const editorRef = useRef(null);
 	const rootRef = useRef(null);
 	const webviewRef = useRef(null);
 	const props_onChangeRef = useRef<Function>(null);
 	props_onChangeRef.current = props.onChange;
-	const contentKeyHasChangedRef = useRef(false);
-	contentKeyHasChangedRef.current = previousContentKey !== props.contentKey;
 
 	const rootSize = useRootSize({ rootRef });
+
+	usePluginServiceRegistration(ref);
 
 	const { resetScroll, editor_scroll, setEditorPercentScroll, setViewerPercentScroll } = useScrollHandler(editorRef, webviewRef, props.onScroll);
 
@@ -139,8 +140,25 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 					commandProcessed = false;
 				}
 
+				let commandOutput = null;
+
 				if (!commandProcessed) {
+					const selectedText = () => {
+						if (!editorRef.current) return '';
+						const selections = editorRef.current.getSelections();
+						return selections.length ? selections[0] : '';
+					};
+
 					const commands: any = {
+						selectedText: () => {
+							return selectedText();
+						},
+						selectedHtml: () => {
+							return selectedText();
+						},
+						replaceSelection: (value:any) => {
+							return editorRef.current.replaceSelection(value);
+						},
 						textBold: () => wrapSelectionWithStrings('**', '**', _('strong text')),
 						textItalic: () => wrapSelectionWithStrings('*', '*', _('emphasised text')),
 						textLink: async () => {
@@ -185,14 +203,13 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 					};
 
 					if (commands[cmd.name]) {
-						commands[cmd.name](cmd.value);
+						commandOutput = commands[cmd.name](cmd.value);
 					} else {
 						reg.logger().warn('CodeMirror: unsupported Joplin command: ', cmd);
-						return false;
 					}
 				}
 
-				return true;
+				return commandOutput;
 			},
 		};
 	}, [props.content, addListItem, wrapSelectionWithStrings, setEditorPercentScroll, setViewerPercentScroll, resetScroll, renderedBody]);
@@ -470,9 +487,12 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 	useEffect(() => {
 		let cancelled = false;
 
-		const interval = contentKeyHasChangedRef.current ? 0 : 500;
+		// When a new note is loaded (contentKey is different), we want the note to be displayed
+		// right away. However once that's done, we put a small delay so that the view is not
+		// being constantly updated while the user changes the note.
+		const interval = renderedBodyContentKey !== props.contentKey ? 0 : 500;
 
-		const timeoutId = setTimeout(async () => {
+		const timeoutId = shim.setTimeout(async () => {
 			let bodyToRender = props.content;
 
 			if (!bodyToRender.trim() && props.visiblePanes.indexOf('viewer') >= 0 && props.visiblePanes.indexOf('editor') < 0) {
@@ -481,15 +501,25 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			}
 
 			const result = await props.markupToHtml(props.contentMarkupLanguage, bodyToRender, markupRenderOptions({ resourceInfos: props.resourceInfos }));
+
 			if (cancelled) return;
+
 			setRenderedBody(result);
+
+			// Since we set `renderedBodyContentKey` here, it means this effect is going to
+			// be triggered again, but that's hard to avoid and the second call would be cheap
+			// anyway since the renderered markdown is cached by MdToHtml. We could use a ref
+			// to avoid this, but a second rendering might still happens anyway to render images,
+			// resources, or for other reasons. So it's best to focus on making any second call
+			// to this effect as cheap as possible with caching, etc.
+			setRenderedBodyContentKey(props.contentKey);
 		}, interval);
 
 		return () => {
 			cancelled = true;
-			clearTimeout(timeoutId);
+			shim.clearTimeout(timeoutId);
 		};
-	}, [props.content, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos, props.markupToHtml]);
+	}, [props.content, props.contentKey, renderedBodyContentKey, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos, props.markupToHtml]);
 
 	useEffect(() => {
 		if (!webviewReady) return;
@@ -615,7 +645,8 @@ function CodeMirror(props: NoteBodyEditorProps, ref: any) {
 			<div style={styles.rowToolbar}>
 				<Toolbar
 					themeId={props.themeId}
-					dispatch={props.dispatch}
+					// dispatch={props.dispatch}
+					// plugins={props.plugins}
 				/>
 				{props.noteToolbar}
 			</div>

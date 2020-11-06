@@ -1,18 +1,56 @@
 const fs = require('fs-extra');
-const { shim } = require('lib/shim.js');
+const shim = require('lib/shim').default;
 const { GeolocationNode } = require('lib/geolocation-node.js');
 const { FileApiDriverLocal } = require('lib/file-api-driver-local.js');
-const { setLocale, defaultLocale, closestSupportedLocale } = require('lib/locale.js');
-const { FsDriverNode } = require('lib/fs-driver-node.js');
+const { setLocale, defaultLocale, closestSupportedLocale } = require('lib/locale');
+const FsDriverNode = require('lib/fs-driver-node').default;
 const mimeUtils = require('lib/mime-utils.js').mime;
 const Note = require('lib/models/Note.js');
 const Resource = require('lib/models/Resource.js');
 const urlValidator = require('valid-url');
 const Setting = require('lib/models/Setting.js');
-const { _ } = require('lib/locale.js');
+const { _ } = require('lib/locale');
 const http = require('http');
 const https = require('https');
 const toRelative = require('relative');
+const timers = require('timers');
+const zlib = require('zlib');
+
+function fileExists(filePath) {
+	try {
+		return fs.statSync(filePath).isFile();
+	} catch (err) {
+		return false;
+	}
+}
+
+const gunzipFile = function(source, destination) {
+	if (!fileExists(source)) {
+		throw new Error(`No such file: ${source}`);
+	}
+
+	return new Promise((resolve, reject) => {
+		// prepare streams
+		const src = fs.createReadStream(source);
+		const dest = fs.createWriteStream(destination);
+
+		// extract the archive
+		src.pipe(zlib.createGunzip()).pipe(dest);
+
+		// callback on extract completion
+		dest.on('close', function() {
+			resolve();
+		});
+
+		src.on('error', () => {
+			reject();
+		});
+
+		dest.on('error', () => {
+			reject();
+		});
+	});
+};
 
 function shimInit() {
 	shim.fsDriver = () => {
@@ -67,7 +105,7 @@ function shimInit() {
 
 	shim.showMessageBox = (message, options = null) => {
 		if (shim.isElectron()) {
-			const { bridge } = require('electron').remote.require('./bridge');
+			const bridge = require('electron').remote.require('./bridge').default;
 			return bridge().showMessageBox(message, options);
 		} else {
 			throw new Error('Not implemented');
@@ -152,8 +190,8 @@ function shimInit() {
 		const readChunk = require('read-chunk');
 		const imageType = require('image-type');
 
-		const { uuid } = require('lib/uuid.js');
-		const { basename, fileExtension, safeFileExtension } = require('lib/path-utils.js');
+		const uuid = require('lib/uuid').default;
+		const { basename, fileExtension, safeFileExtension } = require('lib/path-utils');
 
 		if (!(await fs.pathExists(filePath))) throw new Error(_('Cannot access %s', filePath));
 
@@ -213,7 +251,7 @@ function shimInit() {
 		}, options);
 
 		const { basename } = require('path');
-		const { escapeTitleText } = require('lib/markdownUtils');
+		const { escapeTitleText } = require('lib/markdownUtils').default;
 		const { toFileProtocolPath } = require('lib/path-utils');
 
 		let resource = null;
@@ -365,9 +403,25 @@ function shimInit() {
 					const request = http.request(requestOptions, function(response) {
 						response.pipe(file);
 
+						const isGzipped = response.headers['content-encoding'] === 'gzip';
+
 						file.on('finish', function() {
-							file.close(() => {
-								resolve(makeResponse(response));
+							file.close(async () => {
+								if (isGzipped) {
+									const gzipFilePath = `${filePath}.gzip`;
+									await shim.fsDriver().move(filePath, gzipFilePath);
+
+									try {
+										await gunzipFile(gzipFilePath, filePath);
+										resolve(makeResponse(response));
+									} catch (error) {
+										cleanUpOnError(error);
+									}
+
+									shim.fsDriver().remove(gzipFilePath);
+								} else {
+									resolve(makeResponse(response));
+								}
 							});
 						});
 					});
@@ -402,7 +456,7 @@ function shimInit() {
 	shim.Buffer = Buffer;
 
 	shim.openUrl = url => {
-		const { bridge } = require('electron').remote.require('./bridge');
+		const bridge = require('electron').remote.require('./bridge').default;
 		// Returns true if it opens the file successfully; returns false if it could
 		// not find the file.
 		return bridge().openExternal(url);
@@ -453,6 +507,22 @@ function shimInit() {
 
 	shim.pathRelativeToCwd = (path) => {
 		return toRelative(process.cwd(), path);
+	};
+
+	shim.setTimeout = (fn, interval) => {
+		return timers.setTimeout(fn, interval);
+	};
+
+	shim.setInterval = (fn, interval) => {
+		return timers.setInterval(fn, interval);
+	};
+
+	shim.clearTimeout = (id) => {
+		return timers.clearTimeout(id);
+	};
+
+	shim.clearInterval = (id) => {
+		return timers.clearInterval(id);
 	};
 
 }

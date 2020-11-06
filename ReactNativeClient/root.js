@@ -7,15 +7,15 @@ const SafeAreaView = require('lib/components/SafeAreaView');
 const { connect, Provider } = require('react-redux');
 const { BackButtonService } = require('lib/services/back-button.js');
 const NavService = require('lib/services/NavService.js');
-const AlarmService = require('lib/services/AlarmService.js');
-const AlarmServiceDriver = require('lib/services/AlarmServiceDriver');
-const Alarm = require('lib/models/Alarm');
+const AlarmService = require('lib/services/AlarmService.js').default;
+const AlarmServiceDriver = require('lib/services/AlarmServiceDriver').default;
+const Alarm = require('lib/models/Alarm').default;
 const { createStore, applyMiddleware } = require('redux');
 const reduxSharedMiddleware = require('lib/components/shared/reduxSharedMiddleware');
 const { shimInit } = require('lib/shim-init-react.js');
 const { time } = require('lib/time-utils.js');
 const { AppNav } = require('lib/components/app-nav.js');
-const { Logger } = require('lib/logger.js');
+const Logger = require('lib/Logger').default;
 const Note = require('lib/models/Note.js');
 const Folder = require('lib/models/Folder.js');
 const BaseSyncTarget = require('lib/BaseSyncTarget.js');
@@ -27,7 +27,7 @@ const BaseItem = require('lib/models/BaseItem.js');
 const MasterKey = require('lib/models/MasterKey.js');
 const Revision = require('lib/models/Revision.js');
 const BaseModel = require('lib/BaseModel.js');
-const BaseService = require('lib/services/BaseService.js');
+const BaseService = require('lib/services/BaseService').default;
 const ResourceService = require('lib/services/ResourceService');
 const RevisionService = require('lib/services/RevisionService');
 const KvStore = require('lib/services/KvStore');
@@ -35,7 +35,7 @@ const { JoplinDatabase } = require('lib/joplin-database.js');
 const { Database } = require('lib/database.js');
 const { NotesScreen } = require('lib/components/screens/notes.js');
 const { TagsScreen } = require('lib/components/screens/tags.js');
-const { NoteScreen } = require('lib/components/screens/note.js');
+const NoteScreen = require('lib/components/screens/Note').default;
 const { ConfigScreen } = require('lib/components/screens/config.js');
 const { FolderScreen } = require('lib/components/screens/folder.js');
 const { LogScreen } = require('lib/components/screens/log.js');
@@ -45,17 +45,18 @@ const { OneDriveLoginScreen } = require('lib/components/screens/onedrive-login.j
 const { EncryptionConfigScreen } = require('lib/components/screens/encryption-config.js');
 const { DropboxLoginScreen } = require('lib/components/screens/dropbox-login.js');
 const UpgradeSyncTargetScreen = require('lib/components/screens/UpgradeSyncTargetScreen').default;
-const Setting = require('lib/models/Setting.js');
+const Setting = require('lib/models/Setting').default;
 const { MenuContext } = require('react-native-popup-menu');
 const { SideMenu } = require('lib/components/side-menu.js');
 const { SideMenuContent } = require('lib/components/side-menu-content.js');
 const { SideMenuContentNote } = require('lib/components/side-menu-content-note.js');
 const { DatabaseDriverReactNative } = require('lib/database-driver-react-native');
 const { reg } = require('lib/registry.js');
-const { setLocale, closestSupportedLocale, defaultLocale } = require('lib/locale.js');
+const { setLocale, closestSupportedLocale, defaultLocale } = require('lib/locale');
 const RNFetchBlob = require('rn-fetch-blob').default;
-const { PoorManIntervals } = require('lib/poor-man-intervals.js');
-const { reducer, defaultState } = require('lib/reducer.js');
+const PoorManIntervals = require('lib/PoorManIntervals').default;
+const reducer = require('lib/reducer').default;
+const { defaultState } = require('lib/reducer');
 const { FileApiDriverLocal } = require('lib/file-api-driver-local.js');
 const DropdownAlert = require('react-native-dropdownalert').default;
 const ShareExtension = require('lib/ShareExtension.js').default;
@@ -64,7 +65,7 @@ const ResourceFetcher = require('lib/services/ResourceFetcher');
 const SearchEngine = require('lib/services/searchengine/SearchEngine');
 const WelcomeUtils = require('lib/WelcomeUtils');
 const { themeStyle } = require('lib/components/global-style.js');
-const { uuid } = require('lib/uuid.js');
+const uuid = require('lib/uuid').default;
 
 const { loadKeychainServiceAndSettings } = require('lib/services/SettingUtils');
 const KeychainServiceDriverMobile = require('lib/services/keychain/KeychainServiceDriver.mobile').default;
@@ -72,14 +73,12 @@ const KeychainServiceDriverMobile = require('lib/services/keychain/KeychainServi
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetOneDrive = require('lib/SyncTargetOneDrive.js');
 const SyncTargetFilesystem = require('lib/SyncTargetFilesystem.js');
-const SyncTargetOneDriveDev = require('lib/SyncTargetOneDriveDev.js');
 const SyncTargetNextcloud = require('lib/SyncTargetNextcloud.js');
 const SyncTargetWebDAV = require('lib/SyncTargetWebDAV.js');
 const SyncTargetDropbox = require('lib/SyncTargetDropbox.js');
 const SyncTargetAmazonS3 = require('lib/SyncTargetAmazonS3.js');
 
 SyncTargetRegistry.addClass(SyncTargetOneDrive);
-if (__DEV__) SyncTargetRegistry.addClass(SyncTargetOneDriveDev);
 SyncTargetRegistry.addClass(SyncTargetNextcloud);
 SyncTargetRegistry.addClass(SyncTargetWebDAV);
 SyncTargetRegistry.addClass(SyncTargetDropbox);
@@ -441,7 +440,7 @@ async function initialize(dispatch) {
 	Resource.fsDriver_ = fsDriver;
 	FileApiDriverLocal.fsDriver_ = fsDriver;
 
-	AlarmService.setDriver(new AlarmServiceDriver());
+	AlarmService.setDriver(new AlarmServiceDriver(mainLogger));
 	AlarmService.setLogger(mainLogger);
 
 	try {
@@ -464,7 +463,6 @@ async function initialize(dispatch) {
 			let locale = NativeModules.I18nManager.localeIdentifier;
 			if (!locale) locale = defaultLocale();
 			Setting.setValue('locale', closestSupportedLocale(locale));
-			if (Setting.value('env') === 'dev') Setting.setValue('sync.target', SyncTargetRegistry.nameToId('onedrive_dev'));
 			Setting.setValue('firstStart', 0);
 		}
 

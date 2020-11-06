@@ -1,4 +1,5 @@
 import ShareExtension, { SharedData } from './ShareExtension';
+import shim from 'lib/shim';
 
 const Note = require('lib/models/Note.js');
 const checkPermissions = require('lib/checkPermissions.js').default;
@@ -8,9 +9,9 @@ const { PermissionsAndroid } = require('react-native');
 export default async (sharedData: SharedData, folderId: string, dispatch: Function) => {
 
 	if (!!sharedData.resources && sharedData.resources.length > 0) {
-		const hasPermissions = await checkPermissions(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
+		const response = await checkPermissions(PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE);
 
-		if (!hasPermissions) {
+		if (response !== PermissionsAndroid.RESULTS.GRANTED) {
 			ToastAndroid.show('Cannot receive shared data - permission denied', ToastAndroid.SHORT);
 			ShareExtension.close();
 			return;
@@ -31,7 +32,7 @@ export default async (sharedData: SharedData, folderId: string, dispatch: Functi
 		parent_id: folderId,
 	}, { provisional: true });
 
-	setTimeout(() => {
+	shim.setTimeout(() => {
 		dispatch({
 			type: 'NAV_GO',
 			routeName: 'Note',

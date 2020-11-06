@@ -9,7 +9,7 @@ const Note = require('lib/models/Note.js');
 const BaseItem = require('lib/models/BaseItem.js');
 const Resource = require('lib/models/Resource.js');
 const BaseModel = require('lib/BaseModel.js');
-const { shim } = require('lib/shim');
+const shim = require('lib/shim').default;
 
 process.on('unhandledRejection', (reason, p) => {
 	console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
@@ -97,6 +97,16 @@ describe('models_BaseItem', function() {
 		const folder = await Folder.save({ title: 'folder' });
 		const note = await Note.save({ title: 'note', parent_id: folder.id });
 		await Note.updateGeolocation(note.id);
+
+		const noteBefore = await Note.load(note.id);
+		const serialized = await Note.serialize(noteBefore);
+		const noteAfter = await Note.unserialize(serialized);
+
+		expect(noteAfter).toEqual(noteBefore);
+	}));
+
+	it('should serialize and unserialize properties that contain new lines', asyncTest(async () => {
+		const note = await Note.save({ title: 'note', source_url: '\nhttps://joplinapp.org/\n' });
 
 		const noteBefore = await Note.load(note.id);
 		const serialized = await Note.serialize(noteBefore);

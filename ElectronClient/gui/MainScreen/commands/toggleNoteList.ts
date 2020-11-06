@@ -1,10 +1,10 @@
-import { CommandDeclaration, CommandRuntime } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
+import { CommandDeclaration, CommandRuntime } from 'lib/services/CommandService';
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'toggleNoteList',
 	label: () => _('Toggle note list'),
-	iconName: 'fa-align-justify',
+	iconName: 'fas fa-align-justify',
 };
 
 export const runtime = (comp:any):CommandRuntime => {
@@ -13,9 +13,6 @@ export const runtime = (comp:any):CommandRuntime => {
 			comp.props.dispatch({
 				type: 'NOTELIST_VISIBILITY_TOGGLE',
 			});
-		},
-		title: () => {
-			return _('Toggle note list');
 		},
 	};
 };

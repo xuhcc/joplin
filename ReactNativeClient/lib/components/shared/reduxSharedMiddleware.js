@@ -1,13 +1,16 @@
-const Setting = require('lib/models/Setting');
+const Setting = require('lib/models/Setting').default;
 const Tag = require('lib/models/Tag');
 const BaseModel = require('lib/BaseModel');
 const Note = require('lib/models/Note');
 const { reg } = require('lib/registry.js');
 const ResourceFetcher = require('lib/services/ResourceFetcher');
 const DecryptionWorker = require('lib/services/DecryptionWorker');
+const eventManager = require('lib/eventManager').default;
 
 const reduxSharedMiddleware = async function(store, next, action) {
 	const newState = store.getState();
+
+	eventManager.appStateEmit(newState);
 
 	let refreshTags = false;
 
@@ -40,8 +43,11 @@ const reduxSharedMiddleware = async function(store, next, action) {
 		DecryptionWorker.instance().scheduleStart();
 	}
 
+	// 2020-10-19: Removed "NOTE_UPDATE_ONE" because there's no property in a note that
+	// should trigger a refreshing of the tags.
+	// Trying to fix this: https://github.com/laurent22/joplin/issues/3893
 	if (action.type == 'NOTE_DELETE' ||
-		action.type == 'NOTE_UPDATE_ONE' ||
+		// action.type == 'NOTE_UPDATE_ONE' ||
 		action.type == 'NOTE_UPDATE_ALL' ||
 		action.type == 'NOTE_TAG_REMOVE' ||
 		action.type == 'TAG_UPDATE_ONE') {

@@ -1,11 +1,11 @@
 const { BaseCommand } = require('./base-command.js');
-const { _ } = require('lib/locale.js');
+const { _ } = require('lib/locale');
 const EncryptionService = require('lib/services/EncryptionService');
 const DecryptionWorker = require('lib/services/DecryptionWorker');
 const BaseItem = require('lib/models/BaseItem');
-const Setting = require('lib/models/Setting.js');
-const { shim } = require('lib/shim');
-const pathUtils = require('lib/path-utils.js');
+const Setting = require('lib/models/Setting').default;
+const shim = require('lib/shim').default;
+const pathUtils = require('lib/path-utils');
 const imageType = require('image-type');
 const readChunk = require('read-chunk');
 
@@ -38,17 +38,19 @@ class Command extends BaseCommand {
 				this.stdout(_('Operation cancelled'));
 				return false;
 			}
-			Setting.setObjectKey('encryption.passwordCache', masterKeyId, password);
+			Setting.setObjectValue('encryption.passwordCache', masterKeyId, password);
 			await EncryptionService.instance().loadMasterKeysFromSettings();
 			return true;
 		};
 
 		const startDecryption = async () => {
 			this.stdout(_('Starting decryption... Please wait as it may take several minutes depending on how much there is to decrypt.'));
-
 			while (true) {
 				try {
 					const result = await DecryptionWorker.instance().start();
+
+					if (result.error) throw result.error;
+
 					const line = [];
 					line.push(_('Decrypted items: %d', result.decryptedItemCount));
 					if (result.skippedItemCount) line.push(_('Skipped items: %d (use --retry-failed-items to retry decrypting them)', result.skippedItemCount));

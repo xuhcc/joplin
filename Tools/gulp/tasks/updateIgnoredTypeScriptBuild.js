@@ -10,11 +10,15 @@ module.exports = {
 				'**/node_modules/**',
 				'**/.git/**',
 				'**/ElectronClient/lib/**',
-				'**/CliClient/build/lib/**',
-				'**/CliClient/tests-build/lib/**',
+				'**/CliClient/build/**',
+				'**/CliClient/tests-build/**',
 				'**/ElectronClient/dist/**',
 				'**/Modules/TinyMCE/JoplinLists/**',
 				'**/Modules/TinyMCE/IconPack/**',
+				'**/CliClient/tests/support/plugins/**',
+				'**/plugin_types/**',
+				'**/ReactNativeClient/android/**',
+				'**/ReactNativeClient/ios/**',
 			],
 		}).map(f => f.substr(rootDir.length + 1));
 
@@ -30,6 +34,7 @@ module.exports = {
 		await Promise.all([
 			utils.replaceFileText(`${rootDir}/.gitignore`, regex, replacement),
 			utils.replaceFileText(`${rootDir}/.eslintignore`, regex, replacement),
+			utils.replaceFileText(`${rootDir}/.ignore`, regex, replacement),
 		]);
 	},
 };

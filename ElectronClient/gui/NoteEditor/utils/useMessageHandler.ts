@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { FormNote } from './types';
 import contextMenu from './contextMenu';
 import ResourceEditWatcher from '../../../lib/services/ResourceEditWatcher/index';
+import { _ } from 'lib/locale';
 const BaseItem = require('lib/models/BaseItem');
-const { _ } = require('lib/locale');
 const BaseModel = require('lib/BaseModel.js');
 const Resource = require('lib/models/Resource.js');
-const { bridge } = require('electron').remote.require('./bridge');
+const bridge = require('electron').remote.require('./bridge').default;
 const { urlDecode } = require('lib/string-utils');
 const urlUtils = require('lib/urlUtils');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
@@ -41,7 +41,7 @@ export default function useMessageHandler(scrollWhenReady:any, setScrollWhenRead
 				itemType: arg0 && arg0.type,
 				resourceId: arg0.resourceId,
 				textToCopy: arg0.textToCopy,
-				linkToCopy: null,
+				linkToCopy: arg0.linkToCopy || null,
 				htmlToCopy: '',
 				insertContent: () => { console.warn('insertContent() not implemented'); },
 			});

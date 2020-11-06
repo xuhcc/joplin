@@ -10,6 +10,7 @@ require('app-module-path').addPath(`${__dirname}/../ReactNativeClient`);
 const rootDir = `${__dirname}/..`;
 
 const { filename, fileExtension } = require(`${rootDir}/ReactNativeClient/lib/path-utils.js`);
+const markdownUtils = require(`${rootDir}/ReactNativeClient/lib/markdownUtils`).default;
 const fs = require('fs-extra');
 const gettextParser = require('gettext-parser');
 
@@ -19,7 +20,7 @@ const rnDir = `${rootDir}/ReactNativeClient`;
 const electronDir = `${rootDir}/ElectronClient`;
 
 const { execCommand, isMac, insertContentIntoFile } = require('./tool-utils.js');
-const { countryDisplayName, countryCodeOnly } = require('lib/locale.js');
+const { countryDisplayName, countryCodeOnly } = require('lib/locale');
 
 function parsePoFile(filePath) {
 	const content = fs.readFileSync(filePath);
@@ -200,6 +201,12 @@ function extractTranslator(regex, poContent) {
 	return translatorName;
 }
 
+function translatorNameToMarkdown(translatorName) {
+	const matches = translatorName.match(/^(.*?)\s*\((.*)\)$/);
+	if (!matches) return translatorName;
+	return `[${markdownUtils.escapeTitleText(matches[1])}](mailto:${markdownUtils.escapeLinkUrl(matches[2])})`;
+}
+
 async function translationStatus(isDefault, poFile) {
 	// "apt install translate-toolkit" to have pocount
 	let pocountPath = 'pocount';
@@ -229,6 +236,13 @@ async function translationStatus(isDefault, poFile) {
 	translatorName = translatorName.replace(/ </, ' (');
 	translatorName = translatorName.replace(/>/, ')');
 
+	// Some users have very long names and very long email addresses and in that case gettext
+	// records it over several lines, and here we only have the first line. So if we're having a broken
+	// email, add a closing ')' so that at least rendering works fine.
+	if (translatorName.indexOf('(') >= 0 && translatorName.indexOf(')') < 0) translatorName += ')';
+
+	translatorName = translatorNameToMarkdown(translatorName);
+
 	const isAlways100 = poFile.endsWith('en_US.po');
 
 	return {
@@ -248,13 +262,14 @@ function flagImageUrl(locale) {
 	if (locale === 'sv') return `${baseUrl}/country-4x3/se.png`;
 	if (locale === 'nb_NO') return `${baseUrl}/country-4x3/no.png`;
 	if (locale === 'ro') return `${baseUrl}/country-4x3/ro.png`;
+	if (locale === 'vi') return `${baseUrl}/country-4x3/vi.png`;
 	if (locale === 'fa') return `${baseUrl}/country-4x3/ir.png`;
 	if (locale === 'eo') return `${baseUrl}/esperanto.png`;
 	return `${baseUrl}/country-4x3/${countryCodeOnly(locale).toLowerCase()}.png`;
 }
 
 function poFileUrl(locale) {
-	return `https://github.com/laurent22/joplin/blob/master/CliClient/locales/${locale}.po`;
+	return `https://github.com/laurent22/joplin/blob/dev/CliClient/locales/${locale}.po`;
 }
 
 function translationStatusToMdTable(status) {

@@ -1,7 +1,7 @@
-import { CommandDeclaration, CommandRuntime } from '../../../lib/services/CommandService';
-const { _ } = require('lib/locale');
-const { stateUtils } = require('lib/reducer.js');
-const Setting = require('lib/models/Setting');
+import { CommandDeclaration, CommandRuntime, CommandContext } from 'lib/services/CommandService';
+import Setting from 'lib/models/Setting';
+import { stateUtils } from 'lib/reducer';
+import { _ } from 'lib/locale';
 
 export const declaration:CommandDeclaration = {
 	name: 'toggleEditors',
@@ -11,22 +11,14 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async (props:any) => {
+		execute: async (context:CommandContext) => {
 			// A bit of a hack, but for now don't allow changing code view
 			// while a note is being saved as it will cause a problem with
 			// TinyMCE because it won't have time to send its content before
 			// being switch to Ace Editor.
-			if (props.hasNotesBeingSaved) return;
+			if (stateUtils.hasNotesBeingSaved(context.state)) return;
 			Setting.toggle('editor.codeView');
 		},
-		isEnabled: (props:any):boolean => {
-			return !props.hasNotesBeingSaved && props.selectedNoteIds.length === 1;
-		},
-		mapStateToProps: (state:any):any => {
-			return {
-				hasNotesBeingSaved: stateUtils.hasNotesBeingSaved(state),
-				selectedNoteIds: state.selectedNoteIds,
-			};
-		},
+		enabledCondition: '!notesAreBeingSaved && oneNoteSelected',
 	};
 };
